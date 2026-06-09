@@ -1,0 +1,6 @@
+{
+  "name": "Aegis",
+  "description": "Anzen for every family - A family GPS child safety platform built specifically for Nigerian families facing a kidnapping crisis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
