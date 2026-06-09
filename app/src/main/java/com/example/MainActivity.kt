@@ -89,6 +89,14 @@ fun AegisNavigationRouter(viewModel: AegisViewModel) {
             )
             is AegisScreen.AddChildStep -> AddChildStepScreen(
                 lang = lang,
+                onBack = {
+                    val user = viewModel.currentUser.value
+                    if (user != null && user.profileComplete) {
+                        viewModel.navigateTo(AegisScreen.MainAppContainer)
+                    } else {
+                        viewModel.navigateTo(AegisScreen.Welcome)
+                    }
+                },
                 onDone = { name, age, av -> viewModel.onAddChildDone(name, age, av) }
             )
             is AegisScreen.ChoosePackageStep -> ChoosePackageStepScreen(
@@ -100,17 +108,19 @@ fun AegisNavigationRouter(viewModel: AegisViewModel) {
             is AegisScreen.PairDeviceStep -> PairDeviceStepScreen(
                 lang = lang,
                 packageChosen = active.packageChosen,
-                onBack = { viewModel.navigateTo(AegisScreen.AddChildStep) },
+                onBack = { viewModel.navigateTo(AegisScreen.ChoosePackageStep(active.name, active.age, active.avatar)) },
                 onComplete = { viewModel.onDevicePaired(active.name, active.age, active.avatar, active.packageChosen) }
             )
             is AegisScreen.AddFamilyMemberStep -> AddFamilyMemberStepScreen(
                 lang = lang,
                 viewModel = viewModel,
+                onBack = { viewModel.navigateTo(AegisScreen.MainAppContainer) },
                 onComplete = { viewModel.onAddFamilyStepDone() }
             )
             is AegisScreen.SetGeofenceSetup -> SetGeofenceScreen(
                 lang = lang,
                 viewModel = viewModel,
+                onBack = { viewModel.navigateTo(AegisScreen.MainAppContainer) },
                 onComplete = { viewModel.navigateTo(AegisScreen.MainAppContainer) }
             )
             is AegisScreen.MainAppContainer -> MainAppContainer(

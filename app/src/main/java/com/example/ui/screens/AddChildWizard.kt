@@ -36,8 +36,11 @@ import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import java.util.*
 
+import androidx.activity.compose.BackHandler
+
 @Composable
-fun AddChildStepScreen(lang: String, onDone: (String, String, String) -> Unit) {
+fun AddChildStepScreen(lang: String, onBack: () -> Unit, onDone: (String, String, String) -> Unit) {
+    BackHandler { onBack() }
     var name by remember { mutableStateOf("") }
     var age by remember { mutableStateOf("") }
     var selectedAvatar by remember { mutableStateOf("👦") }
@@ -55,13 +58,16 @@ fun AddChildStepScreen(lang: String, onDone: (String, String, String) -> Unit) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Spacer(modifier = Modifier.height(24.dp))
-                // Progress Wizard Info
+                Spacer(modifier = Modifier.height(16.dp))
+                IconButton(onClick = onBack) {
+                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = DarkNavy)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Step 1 of 4", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = t("add_child", lang),
-                    fontSize = 28.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Black,
                     color = DarkNavy
                 )
@@ -110,23 +116,140 @@ fun AddChildStepScreen(lang: String, onDone: (String, String, String) -> Unit) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(t("avatar", lang), fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    avatars.forEach { av ->
+                var showUploadDialog by remember { mutableStateOf(false) }
+
+                Text("Profile Picture Setup", fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 15.sp)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(DarkNavy.copy(alpha = 0.04f))
+                        .clickable { showUploadDialog = true }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .background(GoldAccent, shape = CircleShape)
+                            .border(2.dp, DarkNavy, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = selectedAvatar,
+                            fontSize = 36.sp
+                        )
                         Box(
                             modifier = Modifier
-                                .size(56.dp)
-                                .background(
-                                    color = if (selectedAvatar == av) GoldAccent else DarkNavy.copy(alpha = 0.05f),
-                                    shape = CircleShape
-                                )
-                                .clickable { selectedAvatar = av },
+                                .align(Alignment.BottomEnd)
+                                .size(24.dp)
+                                .background(DarkNavy, shape = CircleShape)
+                                .border(1.5.dp, PureWhite, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(av, fontSize = 28.sp)
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = "Change photo",
+                                tint = PureWhite,
+                                modifier = Modifier.size(12.dp)
+                            )
                         }
                     }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Kid Profile Picture",
+                            fontWeight = FontWeight.Bold,
+                            color = DarkNavy,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Tap to simulate capture or choose custom gallery photo.",
+                            fontSize = 12.sp,
+                            color = DarkNavy.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Select Default Preset Photo:", fontWeight = FontWeight.Medium, color = DarkNavy, fontSize = 13.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val presets = listOf("👦" to "Boy", "👧" to "Girl", "🧒" to "Junior", "👶" to "Toddler", "🌟" to "Alpha")
+                    presets.forEach { preset ->
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .background(
+                                    color = if (selectedAvatar == preset.first) GoldAccent else DarkNavy.copy(alpha = 0.05f),
+                                    shape = CircleShape
+                                )
+                                .border(
+                                    width = if (selectedAvatar == preset.first) 2.dp else 0.dp,
+                                    color = if (selectedAvatar == preset.first) DarkNavy else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .clickable { selectedAvatar = preset.first },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(preset.first, fontSize = 24.sp)
+                        }
+                    }
+                }
+
+                if (showUploadDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showUploadDialog = false },
+                        title = { Text("Set Child Profile Picture", fontWeight = FontWeight.Bold, color = DarkNavy) },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("Aegis Secure Node supports uploading real photos or simulating camera feeds.", fontSize = 14.sp, color = DarkNavy.copy(alpha = 0.7f))
+                                Divider()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedAvatar = "🦸‍♂️"
+                                            showUploadDialog = false
+                                        }
+                                        .padding(vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Camera, contentDescription = null, tint = DarkNavy)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Simulate Camera Capture (Hero preset)", fontWeight = FontWeight.SemiBold, color = DarkNavy)
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedAvatar = "🧚‍♀️"
+                                            showUploadDialog = false
+                                        }
+                                        .padding(vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = DarkNavy)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Pick from Secure Vault Photo Gallery", fontWeight = FontWeight.SemiBold, color = DarkNavy)
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showUploadDialog = false }) {
+                                Text("Cancel", color = DangerRed)
+                            }
+                        },
+                        containerColor = PureWhite
+                    )
                 }
             }
 
@@ -169,6 +292,8 @@ fun ChoosePackageStepScreen(
         Triple("Aegis Complete (Watch + Patch)", "₦72,000", "Highly recommended bundle. Extreme multi-redundant node coverage.")
     )
 
+    BackHandler { onBack() }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -180,7 +305,11 @@ fun ChoosePackageStepScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                IconButton(onClick = onBack) {
+                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = DarkNavy)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Step 2 of 4", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -303,7 +432,8 @@ fun PairDeviceStepScreen(
     onBack: () -> Unit,
     onComplete: () -> Unit
 ) {
-    // 0: QR Scanner, 1: BLE Scan, 2: Manual serial code
+    BackHandler { onBack() }
+    // 0: QR Scanner, 1: BLE Scan, 2: Manual serial code, 3: Companion Phone Link
     var setupMode by remember { mutableStateOf(0) }
     var isScanning by remember { mutableStateOf(false) }
     var scanProgress by remember { mutableStateOf(0f) }
@@ -359,7 +489,16 @@ fun PairDeviceStepScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = DarkNavy)
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Step 3 of 4", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -370,8 +509,8 @@ fun PairDeviceStepScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Aegis hardware trackers require Carton QR Scan or serial linking code.",
-                    fontSize = 12.sp,
+                    text = "Aegis hardware trackers require Carton QR Scan, BLE, or Companion Phone pairing link.",
+                    fontSize = 11.sp,
                     color = DarkNavy.copy(alpha = 0.5f),
                     textAlign = TextAlign.Center
                 )
@@ -388,11 +527,13 @@ fun PairDeviceStepScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     val tabs = listOf(
-                        Pair(Icons.Default.PhotoCamera, "Carton QR"),
-                        Pair(Icons.Default.Bluetooth, "BLE Search"),
-                        Pair(Icons.Default.Keyboard, "Manual Code")
+                        Triple(Icons.Default.PhotoCamera, "Carton QR", 0),
+                        Triple(Icons.Default.Bluetooth, "BLE Scan", 1),
+                        Triple(Icons.Default.Keyboard, "Serial Code", 2),
+                        Triple(Icons.Default.Smartphone, "Phone Link", 3)
                     )
-                    tabs.forEachIndexed { idx, pair ->
+                    tabs.forEach { item ->
+                        val idx = item.third
                         val active = setupMode == idx
                         Row(
                             modifier = Modifier
@@ -409,16 +550,16 @@ fun PairDeviceStepScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = pair.first,
+                                imageVector = item.first,
                                 contentDescription = null,
                                 tint = if (active) GoldAccent else DarkNavy.copy(alpha = 0.6f),
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(2.dp))
                             Text(
-                                text = pair.second,
+                                text = item.second,
                                 color = if (active) PureWhite else DarkNavy.copy(alpha = 0.6f),
-                                fontSize = 10.sp,
+                                fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -486,7 +627,7 @@ fun PairDeviceStepScreen(
                                     Text("Capturing carton QR...", color = PureWhite.copy(alpha = 0.5f), fontSize = 10.sp)
                                 }
                             }
-                        } else {
+                        } else if (setupMode == 1) {
                             // BLE search radar
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -498,6 +639,23 @@ fun PairDeviceStepScreen(
                                 }
                                 Icon(
                                     imageVector = if (packageChosen.contains("Watch")) Icons.Default.Watch else Icons.Default.Sensors,
+                                    contentDescription = null,
+                                    tint = PureWhite,
+                                    modifier = Modifier.size(56.dp)
+                                )
+                            }
+                        } else {
+                            // Phone Link or Serial Code visual sync radar
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    drawCircle(
+                                        color = GoldAccent.copy(alpha = 1f - scanProgress),
+                                        radius = 120.dp.toPx() * pulseScale,
+                                        style = Stroke(width = 2.dp.toPx())
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.Smartphone,
                                     contentDescription = null,
                                     tint = PureWhite,
                                     modifier = Modifier.size(56.dp)
@@ -568,6 +726,7 @@ fun PairDeviceStepScreen(
                                         value = manualSerialCode,
                                         onValueChange = {
                                             if (it.length <= 12) {
+                                                manualIdentitySet(it)
                                                 manualSerialCode = it.uppercase(Locale.getDefault())
                                                 manualError = ""
                                             }
@@ -594,6 +753,35 @@ fun PairDeviceStepScreen(
                                     }
                                 }
                             }
+                            3 -> { // Companion Phone Link mode
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Smartphone,
+                                        contentDescription = null,
+                                        tint = GoldAccent,
+                                        modifier = Modifier.size(56.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "MOBILE PHONE LINK BEACON",
+                                        color = GoldAccent,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "Use another smartphone (e.g., investor's or tester's phone) as the GPS tracking node. Ideal for proving active sync without hardware.",
+                                        color = PureWhite.copy(alpha = 0.8f),
+                                        fontSize = 10.sp,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -602,8 +790,12 @@ fun PairDeviceStepScreen(
 
                 Text(
                     text = if (successPair) t("pair_success", lang) else if (isScanning) {
-                        if (setupMode == 0) "Reading Carton QR code... Hold steady" else "Searching bluetooth beacons..."
-                    } else "Ready to sync $packageChosen",
+                        if (setupMode == 0) "Reading Carton QR code... Hold steady" 
+                        else if (setupMode == 1) "Searching bluetooth beacons..."
+                        else if (setupMode == 3) "Linking smartphone companion GPS..."
+                        else "Verifying serial registry code..."
+                    } else if (setupMode == 3) "Companion Phone ready to link"
+                    else "Ready to sync $packageChosen",
                     color = if (successPair) SafeGreen else DarkNavy,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
@@ -632,7 +824,10 @@ fun PairDeviceStepScreen(
                             .height(56.dp)
                     ) {
                         Text(
-                            text = (if (setupMode == 0) "Start QR Scanner" else if (setupMode == 1) "Scan Bluetooth Target" else "Link Serial Code").uppercase(Locale.ROOT),
+                            text = (if (setupMode == 0) "Start QR Scanner" 
+                                    else if (setupMode == 1) "Scan Bluetooth Target" 
+                                    else if (setupMode == 3) "Connect Secondary Phone"
+                                    else "Link Serial Code").uppercase(Locale.ROOT),
                             color = PureWhite,
                             fontWeight = FontWeight.Bold
                         )
@@ -664,14 +859,20 @@ fun PairDeviceStepScreen(
     }
 }
 
+// Private dummy helper to maintain text bindings smoothly
+private fun manualIdentitySet(t: String) {}
+
 @Composable
 fun AddFamilyMemberStepScreen(
     lang: String,
     viewModel: AegisViewModel,
+    onBack: () -> Unit,
     onComplete: () -> Unit
 ) {
+    BackHandler { onBack() }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("+234") }
+    var email by remember { mutableStateOf("") }
     var relation by remember { mutableStateOf("Mother") }
     var accessLevel by remember { mutableStateOf("View Only") }
 
@@ -690,7 +891,11 @@ fun AddFamilyMemberStepScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                IconButton(onClick = onBack) {
+                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = DarkNavy)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Step 4 of 4", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -725,6 +930,24 @@ fun AddFamilyMemberStepScreen(
                     label = { Text(t("phone_number", lang)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = DarkNavy,
+                        unfocusedTextColor = DarkNavy,
+                        focusedBorderColor = DarkNavy,
+                        unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
+                        focusedLabelColor = DarkNavy,
+                        unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email Address (Optional)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = DarkNavy,
                         unfocusedTextColor = DarkNavy,
@@ -784,9 +1007,10 @@ fun AddFamilyMemberStepScreen(
                 Button(
                     onClick = {
                         if (name.isNotBlank() && phone.length >= 13) {
-                            viewModel.addFamilyRegular(name, phone, relation, accessLevel)
+                            viewModel.addFamilyRegular(name, phone, email, relation, accessLevel)
                             name = ""
                             phone = "+234"
+                            email = ""
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
@@ -850,8 +1074,10 @@ fun AddFamilyMemberStepScreen(
 fun SetGeofenceScreen(
     lang: String,
     viewModel: AegisViewModel,
+    onBack: () -> Unit,
     onComplete: () -> Unit
 ) {
+    BackHandler { onBack() }
     var zoneName by remember { mutableStateOf("") }
     var selectedRadius by remember { mutableStateOf(300.0) }
     var activeFromHour by remember { mutableStateOf("08:00") }
@@ -949,6 +1175,20 @@ fun SetGeofenceScreen(
                         .align(Alignment.TopCenter),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier
+                                .background(PureWhite.copy(alpha = 0.9f), shape = CircleShape)
+                                .size(40.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = DarkNavy)
+                        }
+                    }
                     Card(
                         colors = CardDefaults.cardColors(containerColor = DarkNavy),
                         shape = RoundedCornerShape(24.dp)
@@ -998,6 +1238,14 @@ fun SetGeofenceScreen(
                             label = { Text(t("zone_name", lang)) },
                             placeholder = { Text("e.g. Ibadan School") },
                             singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = DarkNavy,
+                                unfocusedTextColor = DarkNavy,
+                                focusedBorderColor = DarkNavy,
+                                unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
+                                focusedLabelColor = DarkNavy,
+                                unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
+                            ),
                             modifier = Modifier.fillMaxWidth()
                         )
 
@@ -1055,6 +1303,14 @@ fun SetGeofenceScreen(
                                 onValueChange = {},
                                 label = { Text("From") },
                                 readOnly = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = DarkNavy,
+                                    unfocusedTextColor = DarkNavy,
+                                    focusedBorderColor = DarkNavy,
+                                    unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
+                                    focusedLabelColor = DarkNavy,
+                                    unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
+                                ),
                                 trailingIcon = {
                                     IconButton(onClick = {
                                         val mTimePicker = TimePickerDialog(context, { _, hour, minute ->
@@ -1073,6 +1329,14 @@ fun SetGeofenceScreen(
                                 onValueChange = {},
                                 label = { Text("To") },
                                 readOnly = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = DarkNavy,
+                                    unfocusedTextColor = DarkNavy,
+                                    focusedBorderColor = DarkNavy,
+                                    unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
+                                    focusedLabelColor = DarkNavy,
+                                    unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
+                                ),
                                 trailingIcon = {
                                     IconButton(onClick = {
                                         val mTimePicker = TimePickerDialog(context, { _, hour, minute ->

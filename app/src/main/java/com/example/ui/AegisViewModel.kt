@@ -13,6 +13,7 @@ import com.example.data.Language
 import com.example.data.RealtimeLocation
 import com.example.data.SafetyAlert
 import com.example.data.UserProfile
+import com.example.data.OutboundNotification
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,6 +62,7 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
     val alerts = repository.alerts
     val liveLocations = repository.liveLocations
     val activeLanguage = repository.activeLanguage
+    val outboundNotifications = repository.outboundNotifications
 
     // Toggle and setting configurations of Settings Tab
     private val _zoneAlertsEnabled = MutableStateFlow(true)
@@ -284,8 +286,23 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
         repository.addGeofence(name, lat, lon, radius, from, to, days, childId)
     }
 
-    fun addFamilyRegular(name: String, phone: String, relationship: String, accessLevel: String) {
-        repository.addFamilyMember(name, phone, relationship, accessLevel)
+    fun addFamilyRegular(name: String, phone: String, email: String, relationship: String, accessLevel: String) {
+        repository.addFamilyMember(name, phone, email, relationship, accessLevel)
+    }
+
+    fun launchDeviceEmail(recipient: String, subject: String, body: String) {
+        try {
+            val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                data = android.net.Uri.parse("mailto:")
+                putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf(recipient))
+                putExtra(android.content.Intent.EXTRA_SUBJECT, subject)
+                putExtra(android.content.Intent.EXTRA_TEXT, body)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            getApplication<Application>().startActivity(intent)
+        } catch (e: Exception) {
+            android.util.Log.e("AegisEmail", "Failed to launch mail intent: ${e.message}")
+        }
     }
 
     fun removeFamilyRegular(id: String) {
@@ -348,6 +365,10 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
         repository.updateChildLocationForcefully(childId, randLat, randLon)
     }
 
+    fun updateChildGPSCoordinates(childId: String, lat: Double, lon: Double) {
+        repository.updateChildLocationForcefully(childId, lat, lon)
+    }
+
     private fun triggerDeviceVibration() {
         try {
             val vibrator = getApplication<Application>().getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
@@ -355,5 +376,23 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: Exception) {
             // Safe fallback on headless execution
         }
+    }
+
+    fun updateEmailSimulated(email: String) {
+        val current = repository.currentUser.value ?: return
+        val updatedProfile = current.copy(email = email)
+        repository.saveUserProfile(updatedProfile)
+    }
+
+    fun updatePhoneSimulated(phone: String) {
+        val current = repository.currentUser.value ?: return
+        val updatedProfile = current.copy(phone = phone)
+        repository.saveUserProfile(updatedProfile)
+    }
+
+    fun deleteAccountSimulated() {
+        val current = repository.currentUser.value ?: return
+        val emptyProfile = UserProfile()
+        repository.saveUserProfile(emptyProfile)
     }
 }

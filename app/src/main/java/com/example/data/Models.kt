@@ -4,6 +4,7 @@ data class UserProfile(
     val userId: String = "",
     val fullName: String = "",
     val phone: String = "",
+    val email: String = "",
     val dateOfBirth: String = "",
     val gender: String = "",
     val city: String = "",
@@ -46,6 +47,7 @@ data class FamilyMember(
     val memberId: String = "",
     val name: String = "",
     val phone: String = "",
+    val email: String = "",
     val relationship: String = "", // Mother, Father, Aunt, etc.
     val accessLevel: String = "View Only", // View Only, Full Access
     val status: String = "active" // active, pending
@@ -71,4 +73,13 @@ data class RealtimeLocation(
     val longitude: Double = 3.9470,
     val timestamp: Long = System.currentTimeMillis(),
     val batteryLevel: Int = 88
+)
+
+data class OutboundNotification(
+    val id: String = "",
+    val recipient: String = "", // Phone or Email address
+    val channel: String = "",   // "SMS" or "EMAIL"
+    val content: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val status: String = "SENT" // "SENT", "DELIVERED", "QUEUED"
 )

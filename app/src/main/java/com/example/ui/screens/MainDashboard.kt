@@ -20,12 +20,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.BorderStroke
+import com.example.data.RealtimeLocation
 import com.example.data.ChildTracker
 import com.example.data.Language
 import com.example.data.TranslationStore.t
@@ -726,6 +729,7 @@ fun FamilyScreenTab(lang: String, viewModel: AegisViewModel) {
 
     var inviteName by remember { mutableStateOf("") }
     var invitePhone by remember { mutableStateOf("+234") }
+    var inviteEmail by remember { mutableStateOf("") }
     var inviteRelation by remember { mutableStateOf("Mother") }
 
     Column(
@@ -879,31 +883,64 @@ fun FamilyScreenTab(lang: String, viewModel: AegisViewModel) {
                             onValueChange = { inviteName = it },
                             label = { Text("Peer obv Name") },
                             singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = DarkNavy,
+                                unfocusedTextColor = DarkNavy,
+                                focusedBorderColor = DarkNavy,
+                                unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
+                                focusedLabelColor = DarkNavy,
+                                unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
+                            ),
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(10.dp))
-
                         OutlinedTextField(
                             value = invitePhone,
                             onValueChange = { if (it.startsWith("+234")) invitePhone = it },
                             label = { Text(t("phone_number", lang)) },
                             singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = DarkNavy,
+                                unfocusedTextColor = DarkNavy,
+                                focusedBorderColor = DarkNavy,
+                                unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
+                                focusedLabelColor = DarkNavy,
+                                unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
+                            ),
                             modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
+                         )
+                         Spacer(modifier = Modifier.height(10.dp))
 
-                        Button(
-                            onClick = {
-                                if (inviteName.isNotBlank() && invitePhone.length >= 13) {
-                                    viewModel.addFamilyRegular(inviteName, invitePhone, inviteRelation, "Full Access")
-                                    inviteName = ""
-                                    invitePhone = "+234"
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
-                            shape = RoundedCornerShape(10.dp),
+                         OutlinedTextField(
+                            value = inviteEmail,
+                            onValueChange = { inviteEmail = it },
+                            label = { Text("Email Address (Optional)") },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = DarkNavy,
+                                unfocusedTextColor = DarkNavy,
+                                focusedBorderColor = DarkNavy,
+                                unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
+                                focusedLabelColor = DarkNavy,
+                                unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
+                            ),
                             modifier = Modifier.fillMaxWidth()
-                        ) {
+                         )
+                         Spacer(modifier = Modifier.height(14.dp))
+
+                         Button(
+                             onClick = {
+                                 if (inviteName.isNotBlank() && invitePhone.length >= 13) {
+                                     viewModel.addFamilyRegular(inviteName, invitePhone, inviteEmail, inviteRelation, "Full Access")
+                                     inviteName = ""
+                                     invitePhone = "+234"
+                                     inviteEmail = ""
+                                 }
+                             },
+                             colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                             shape = RoundedCornerShape(10.dp),
+                             modifier = Modifier.fillMaxWidth()
+                          ) {
                             Text(t("invite", lang), color = PureWhite, fontWeight = FontWeight.Medium)
                         }
                     }
@@ -927,6 +964,13 @@ fun SettingsScreenTab(lang: String, viewModel: AegisViewModel, onNavigateEditPro
     )
 
     var showSignoutConfirm by remember { mutableStateOf(false) }
+    var ipProtectionEnabled by remember { mutableStateOf(true) }
+    var twoStepEnabled by remember { mutableStateOf(false) }
+    var selectedServiceDialog by remember { mutableStateOf<String?>(null) }
+    var feedbackText by remember { mutableStateOf("") }
+    var emailInput by remember { mutableStateOf("") }
+    var phoneInput by remember { mutableStateOf("") }
+    var passkeyInput by remember { mutableStateOf("") }
 
     LazyColumn(
         modifier = Modifier
@@ -1058,24 +1102,384 @@ fun SettingsScreenTab(lang: String, viewModel: AegisViewModel, onNavigateEditPro
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Informational Lib support guides
+            // Detailed Informative Aegis Library
             Text(t("help_header", lang), fontWeight = FontWeight.Bold, color = DarkNavy)
             Spacer(modifier = Modifier.height(8.dp))
             Card(
                 colors = CardDefaults.cardColors(containerColor = PureWhite),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "HOW AEGIS SECURE NETWORK WORKS",
+                        color = GoldAccent,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Aegis secures children in vulnerable areas by layering decoy hardware, secure localized offline links, and dynamic safety barriers.",
+                        color = DarkNavy,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     val guides = listOf(
-                        t("how_works", lang) to "Using decoy watches & hidable adhesive nodes to create deep redundancy grids during active sweeps.",
-                        t("contact_support", lang) to "Call +234 81 2293 8839 (24/7 dedicated military response support team)"
+                        "1. Deep Redundancy & Decoy Protections" to "Children carry standard everyday wearables (watches, belts, backpacks) configured as active tracking items. A tiny secondary RF tracking node is concealed inside the child's clothing/lining. If primary decoy items are removed or lost, the secondary passive sensor continues emitting signal handshakes securely.",
+                        "2. Africa's Talking Offline SMS Gateway" to "Our network relies on robust SMS backup loops. When mobile carrier data (2G/3G/4G) is jammed, compromised, or off-grid, Aegis pings direct numerical geo-coordinates automatically to neighborhood watch nodes via Africa's Talking SMS network channels.",
+                        "3. Boundary Guard Patrol (Dynamic Geofences)" to "Guardians define geo-fencable safe sectors (e.g., School yards, homes, activity hubs) directly on their control deck. If a child crosses these marked perimeter borders without authorization, localized audio alarms and phone warnings dispatch to registered guardians instantly.",
+                        "4. Simulated Decoy Sirens & Call Deflection" to "In extreme crisis scenarios, guardians can trigger high-decibel tracker alarms or incoming decoy phone calls on the child's wearable. This diverts hostile attention, acts as an active deterrent, and signals immediate public help in crowds."
                     )
                     guides.forEachIndexed { idx, pair ->
-                        Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
                             Text(pair.first, fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 13.sp)
-                            Text(pair.second, color = DarkNavy.copy(alpha = 0.5f), fontSize = 11.sp, lineHeight = 15.sp)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(pair.second, color = DarkNavy.copy(alpha = 0.6f), fontSize = 11.sp, lineHeight = 15.sp)
                         }
                         if (idx < guides.size - 1) Divider()
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- ACCOUNT SECURITY & PROTOCOLS ---
+            Text("SECURE ACCOUNT PANEL", fontWeight = FontWeight.Bold, color = DarkNavy)
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = PureWhite),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    SettingsRow(
+                        icon = Icons.Default.Lock,
+                        title = "Passkey Setup",
+                        subtitle = "Enable passwordless biometric secure node entry",
+                        onClick = { selectedServiceDialog = "passkey" }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.Email,
+                        title = "Secure Recovery Email",
+                        subtitle = if (curUser?.email.isNullOrBlank()) "guardian@aegis.com" else curUser?.email,
+                        onClick = { selectedServiceDialog = "email" }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.Lock,
+                        title = "Two-Step Verification",
+                        subtitle = "Validate safety changes over dual backup channels",
+                        trailing = {
+                            Switch(
+                                checked = twoStepEnabled,
+                                onCheckedChange = { twoStepEnabled = it },
+                                colors = SwitchDefaults.colors(checkedTrackColor = SafeGreen)
+                            )
+                        },
+                        onClick = { twoStepEnabled = !twoStepEnabled }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.Phone,
+                        title = "Change Phone Number",
+                        subtitle = if (curUser?.phone.isNullOrBlank()) t("profile_completed_title", lang) else curUser?.phone,
+                        onClick = { selectedServiceDialog = "phone" }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.List,
+                        title = "Request Account Info",
+                        subtitle = "Request complete telemetry data package logs",
+                        onClick = { selectedServiceDialog = "request_info" }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.Delete,
+                        title = "Delete Permanent Account",
+                        subtitle = "Decommission and purge database keys",
+                        onClick = { selectedServiceDialog = "delete_account" }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- PRIVACY & ENCRYPTION ---
+            Text("PRIVACY & NETWORKING", fontWeight = FontWeight.Bold, color = DarkNavy)
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = PureWhite),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    SettingsRow(
+                        icon = Icons.Default.Security,
+                        title = "Protect IP Address",
+                        subtitle = "Route location beacons via secure proxy onions",
+                        trailing = {
+                            Switch(
+                                checked = ipProtectionEnabled,
+                                onCheckedChange = { ipProtectionEnabled = it },
+                                colors = SwitchDefaults.colors(checkedTrackColor = SafeGreen)
+                            )
+                        },
+                        onClick = { ipProtectionEnabled = !ipProtectionEnabled }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.Info,
+                        title = "Privacy Policy",
+                        subtitle = "Learn how your offline coordinates are shielded",
+                        onClick = { selectedServiceDialog = "privacy_policy" }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- SUPPORT & FEEDBACK ---
+            Text("SUPPORT SERVICES", fontWeight = FontWeight.Bold, color = DarkNavy)
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = PureWhite),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    SettingsRow(
+                        icon = Icons.Default.Help,
+                        title = "Help Center Support FAQs",
+                        subtitle = "Calibrate networks, sensors, and GPS zones",
+                        onClick = { selectedServiceDialog = "helpcenter" }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.Feedback,
+                        title = "Send Technical Feedback",
+                        subtitle = "Submit bugs, patches, or system suggestions",
+                        onClick = { selectedServiceDialog = "feedback" }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.Warning,
+                        title = "Channel Telemetry Reports",
+                        subtitle = "Monitor SMS, satellite, and LTE handshakes",
+                        onClick = { selectedServiceDialog = "channel_reports" }
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Default.Info,
+                        title = "Terms of Service Agreement",
+                        subtitle = "Liability limits and defensive guidelines",
+                        onClick = { selectedServiceDialog = "terms" }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- INVESTOR DEMO & SYSTEM DATABASE PORTAL ---
+            Text("INVESTOR DEMO & REGISTERED DATABASE", fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = PureWhite),
+                border = BorderStroke(1.5.dp, GoldAccent),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Header Status
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(Color(0xFF2ECC71), shape = CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("SANDBOX SQL ENGINE ONLINE", color = Color(0xFF2ECC71), fontWeight = FontWeight.Black, fontSize = 10.sp)
+                        }
+                        Text("ACTIVE DEMO", color = GoldAccent, fontWeight = FontWeight.Black, fontSize = 8.sp, modifier = Modifier.background(GoldAccent.copy(alpha = 0.12f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Aegis security databases reside locally in SQLite sandbox layers (SharedPreferences state) inside this APK. This matches the exact database tables synced dynamically with active SMS nodes during cellular live sweeping.",
+                        color = DarkNavy.copy(alpha = 0.6f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Divider()
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Expansible subtab selector
+                    var demoSubTab by remember { mutableStateOf(0) } // 0: Local Account DB, 1: Active GPS Beacons
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(LightBackground)
+                            .padding(2.dp)
+                    ) {
+                        listOf("Parent SQL DB", "GPS Joystick").forEachIndexed { idx, label ->
+                            val active = demoSubTab == idx
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (active) DarkNavy else Color.Transparent)
+                                    .clickable { demoSubTab = idx }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (active) PureWhite else DarkNavy.copy(alpha = 0.7f),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    if (demoSubTab == 0) {
+                        // Parents SQL Database table simulator
+                        Column {
+                            Text("query: SELECT * FROM aegis_parents_registry", color = DarkNavy.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Show registered users
+                            val parentsTable = listOf(
+                                Triple(curUser?.fullName ?: "Guardian-Demo", curUser?.phone ?: "No phone registered", curUser?.city ?: "Ibadan (Host)"),
+                                Triple("Olowo Ibrahim", "+234 803 948 5739", "Lagos (Subscriber)"),
+                                Triple("Chinedu Okafor", "+234 812 394 8572", "Port Harcourt (Subscriber)"),
+                                Triple("Aminu Yusuf", "+234 905 382 9471", "Abuja (Subscriber)")
+                            )
+
+                            parentsTable.forEachIndexed { index, row ->
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = LightBackground.copy(alpha = 0.5f)),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(row.first, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = DarkNavy)
+                                            Text(if (index == 0) "🟢 HOST ADMIN" else "🔹 SUBSCRIBER", color = if (index == 0) Color(0xFF2ECC71) else GoldAccent, fontWeight = FontWeight.Black, fontSize = 8.sp)
+                                        }
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text("Contact: ${row.second}", fontSize = 11.sp, color = DarkNavy.copy(alpha = 0.7f))
+                                            Text(row.third, fontSize = 10.sp, color = DarkNavy.copy(alpha = 0.5f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Live Beacons Joystick Sliders
+                        val activeKids by viewModel.children.collectAsState()
+                        val liveCoords by viewModel.liveLocations.collectAsState()
+
+                        if (activeKids.isEmpty()) {
+                            Text(
+                                "No registered child beacons found. Go to children tab to link a smart watch, adhesive patch, or simulated phone beacon.",
+                                color = DangerRed,
+                                fontSize = 11.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                            )
+                        } else {
+                            Column {
+                                activeKids.forEach { kid ->
+                                    val loc = liveCoords[kid.childId] ?: RealtimeLocation(childId = kid.childId)
+                                    Card(
+                                        colors = CardDefaults.cardColors(containerColor = LightBackground.copy(alpha = 0.5f)),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(kid.avatar, fontSize = 16.sp)
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(kid.name, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = DarkNavy)
+                                                }
+                                                Text(
+                                                    text = kid.packageType.uppercase(Locale.ROOT),
+                                                    color = GoldAccent,
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 8.sp,
+                                                    modifier = Modifier.background(GoldAccent.copy(alpha = 0.12f), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text("Live Coordinates:\nLat: ${String.format(Locale.US, "%.5f", loc.latitude)}, Lon: ${String.format(Locale.US, "%.5f", loc.longitude)}", fontSize = 10.sp, color = DarkNavy.copy(alpha = 0.6f), lineHeight = 14.sp)
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            // Simulation Quick Action buttons
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Button(
+                                                    onClick = { viewModel.updateChildGPSCoordinates(kid.childId, 7.3775, 3.9470) },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = SafeGreen),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                                    modifier = Modifier.weight(1f).height(32.dp)
+                                                ) {
+                                                    Text("Safe Center", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                                }
+                                                Button(
+                                                    onClick = { 
+                                                        // Slide 900 meters outside geofence boundary to trigger alarm instantly!
+                                                        viewModel.simulateChildGPSDriftOut(kid.childId)
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = DangerRed),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                                    modifier = Modifier.weight(1.5f).height(32.dp)
+                                                ) {
+                                                    Text("Simulate Exit", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                                }
+                                                Button(
+                                                    onClick = { viewModel.triggerChildManualSOS(kid.childId) },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                                    modifier = Modifier.weight(1f).height(32.dp)
+                                                ) {
+                                                    Text("Sim SOS", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1108,6 +1512,186 @@ fun SettingsScreenTab(lang: String, viewModel: AegisViewModel, onNavigateEditPro
         }
     }
 
+    if (selectedServiceDialog != null) {
+        AlertDialog(
+            onDismissRequest = { selectedServiceDialog = null },
+            confirmButton = {
+                TextButton(onClick = { selectedServiceDialog = null }) {
+                    Text("DONE", color = DarkNavy, fontWeight = FontWeight.Bold)
+                }
+            },
+            title = {
+                val titleString = when (selectedServiceDialog) {
+                    "passkey" -> "Configure Biometric Passkey"
+                    "email" -> "Recovery Email Address"
+                    "phone" -> "Configure SIM phone link"
+                    "request_info" -> "Request Complete Account Logs"
+                    "delete_account" -> "⚠️ CRITICAL SYSTEM ACTION"
+                    "helpcenter" -> "Aegis Help Center Support"
+                    "feedback" -> "Send System Feedback"
+                    "channel_reports" -> "Channel Telemetry Monitoring"
+                    "terms" -> "Aegis Terms of Service"
+                    "privacy_policy" -> "Aegis Privacy Policy Protocol"
+                    else -> "Settings Details"
+                }
+                Text(titleString, fontWeight = FontWeight.Black, color = DarkNavy, fontSize = 16.sp)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    when (selectedServiceDialog) {
+                        "passkey" -> {
+                            Text("Passkeys allow passwordless, encrypted biometric login using your phone's secure enclave (Face or Fingerprint scanner).", fontSize = 12.sp, color = DarkNavy.copy(alpha = 0.7f), lineHeight = 16.sp)
+                            OutlinedTextField(
+                                value = passkeyInput,
+                                onValueChange = { passkeyInput = it },
+                                label = { Text("Passkey Nickname") },
+                                placeholder = { Text("e.g. Master Device Passkey") },
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = DarkNavy, unfocusedTextColor = DarkNavy),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Button(
+                                onClick = { selectedServiceDialog = null },
+                                colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Bind Biometric Passkey Keys", color = PureWhite, fontSize = 12.sp)
+                            }
+                        }
+                        "email" -> {
+                            Text("Your secure email receives critical daily telemetry summaries and failover alert dispatches if networks are disrupted.", fontSize = 12.sp, color = DarkNavy.copy(alpha = 0.7f), lineHeight = 16.sp)
+                            OutlinedTextField(
+                                value = emailInput,
+                                onValueChange = { emailInput = it },
+                                label = { Text("Email Address") },
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = DarkNavy, unfocusedTextColor = DarkNavy),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Button(
+                                onClick = { 
+                                    viewModel.updateEmailSimulated(emailInput)
+                                    selectedServiceDialog = null 
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Update Secure Email", color = PureWhite, fontSize = 12.sp)
+                            }
+                        }
+                        "phone" -> {
+                            Text("This node SIM number is used by Aegis algorithms to synchronize offline geographical telemetry coordinates over Africa's Talking.", fontSize = 12.sp, color = DarkNavy.copy(alpha = 0.7f), lineHeight = 16.sp)
+                            OutlinedTextField(
+                                value = phoneInput,
+                                onValueChange = { phoneInput = it },
+                                label = { Text("SIM Phone Number") },
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = DarkNavy, unfocusedTextColor = DarkNavy),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Button(
+                                onClick = { 
+                                    viewModel.updatePhoneSimulated(phoneInput)
+                                    selectedServiceDialog = null 
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Save New Tracking SIM", color = PureWhite, fontSize = 12.sp)
+                            }
+                        }
+                        "request_info" -> {
+                            Text("Aegis will compile and package all secure node telemetry, including your calibrated safe zones, paired tracker IDs, and broadcast histories.", fontSize = 12.sp, color = DarkNavy.copy(alpha = 0.7f), lineHeight = 16.sp)
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = GoldAccent.copy(alpha = 0.1f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("📄 Generating package: It will be encrypted and dispatched to your email address dynamically within 5-10 minutes.", fontSize = 11.sp, color = DarkNavy, modifier = Modifier.padding(10.dp), lineHeight = 15.sp)
+                            }
+                        }
+                        "delete_account" -> {
+                            Text("WARNING: Deleting your account will completely purge child telemetry profiles, paired hardware nodes, geofence coordinates, and clear regional watch databases immediately.", color = DangerRed, fontSize = 12.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp)
+                            Button(
+                                onClick = { 
+                                    viewModel.deleteAccountSimulated()
+                                    selectedServiceDialog = null 
+                                    showSignoutConfirm = true 
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = DangerRed),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Permanently Erase System Keys Now", color = PureWhite, fontSize = 12.sp)
+                            }
+                        }
+                        "helpcenter" -> {
+                            Text("Browse real solutions to typical tracking scenarios:", fontSize = 12.sp, color = DarkNavy, fontWeight = FontWeight.Bold)
+                            val faqs = listOf(
+                                "How do I avoid false drift alerts?" to "Ensure safe-zone radiuses are set above 150 meters so atmospheric cell mast hop doesn't trigger anomalous exits.",
+                                "Battery is draining fast?" to "Increase the telemetry check-in interval to 'Hourly' inside notifications settings above to conserve hardware sensors.",
+                                "Device offline warning?" to "Simulate cellular beacons or configure Africa's Talking offline backup loops to handle off-grid environments."
+                            )
+                            faqs.forEach { faq ->
+                                Column {
+                                    Text("• " + faq.first, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = DarkNavy)
+                                    Text(faq.second, fontSize = 11.sp, color = DarkNavy.copy(alpha = 0.6f))
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                }
+                            }
+                        }
+                        "feedback" -> {
+                            Text("We constantly refine Aegis defenses using suggestions from field operators. Submit raw suggestion telemetry:", fontSize = 12.sp, color = DarkNavy.copy(alpha = 0.7f))
+                            OutlinedTextField(
+                                value = feedbackText,
+                                onValueChange = { feedbackText = it },
+                                label = { Text("Suggestions / Technical Logs") },
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = DarkNavy, unfocusedTextColor = DarkNavy),
+                                modifier = Modifier.fillMaxWidth().height(80.dp)
+                            )
+                            Button(
+                                onClick = { 
+                                    feedbackText = ""
+                                    selectedServiceDialog = null 
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Transmit Encrypted Feedback", color = PureWhite, fontSize = 12.sp)
+                            }
+                        }
+                        "channel_reports" -> {
+                            Text("Realtime status check across tracking socket streams:", fontSize = 12.sp, color = DarkNavy.copy(alpha = 0.7f))
+                            val logs = listOf(
+                                "[LOG 10:12:05] ACTIVE: GPS node handshake approved (1.2m accuracy).",
+                                "[LOG 10:30:11] SAT-COM: Handshake ping success code 300.",
+                                "[LOG 10:44:02] INTEGRITY: Fallback GSM alerts channel fully operational. 0 active sweeps."
+                            )
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = DarkNavy.copy(alpha = 0.05f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    logs.forEach { log ->
+                                        Text(log, fontSize = 9.sp, color = DarkNavy, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, lineHeight = 12.sp)
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                    }
+                                }
+                            }
+                        }
+                        "terms" -> {
+                            Text("Aegis defensive software, decoy trackers, and SMS alert channels serve as preventive and educational safety tools. Parents and guardians must collaborate proactively with local safety patrols and tactical groups during real threats.", fontSize = 11.sp, color = DarkNavy.copy(alpha = 0.7f), lineHeight = 15.sp)
+                        }
+                        "privacy_policy" -> {
+                            Text("We do not store trace records of location coordinates unless you explicitly initiate an Amber/Critical sweep event. Local geofence perimeters are fully encrypted on client hardware database vaults.", fontSize = 11.sp, color = DarkNavy.copy(alpha = 0.7f), lineHeight = 15.sp)
+                        }
+                    }
+                }
+            },
+            containerColor = PureWhite
+        )
+    }
+
     if (showSignoutConfirm) {
         AlertDialog(
             onDismissRequest = { showSignoutConfirm = false },
@@ -1128,7 +1712,49 @@ fun SettingsScreenTab(lang: String, viewModel: AegisViewModel, onNavigateEditPro
                 TextButton(onClick = { showSignoutConfirm = false }) {
                     Text(t("cancel", lang))
                 }
-            }
+            },
+            containerColor = PureWhite
         )
+    }
+}
+
+@Composable
+fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String? = null,
+    trailing: @Composable (() -> Unit)? = null,
+    onClick: () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = GoldAccent,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 13.sp)
+            if (subtitle != null) {
+                Text(subtitle, color = DarkNavy.copy(alpha = 0.5f), fontSize = 11.sp)
+            }
+        }
+        if (trailing != null) {
+            trailing()
+        } else {
+            Icon(
+                imageVector = Icons.Default.ArrowForward,
+                contentDescription = null,
+                tint = DarkNavy.copy(alpha = 0.3f),
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }

@@ -41,6 +41,9 @@ class AegisRepository(private val context: Context) {
     private val _activeLanguage = MutableStateFlow("en")
     val activeLanguage: StateFlow<String> = _activeLanguage.asStateFlow()
 
+    private val _outboundNotifications = MutableStateFlow<List<OutboundNotification>>(emptyList())
+    val outboundNotifications: StateFlow<List<OutboundNotification>> = _outboundNotifications.asStateFlow()
+
     init {
         loadDataFromLocalCache()
     }
@@ -94,6 +97,7 @@ class AegisRepository(private val context: Context) {
         prefs.edit().apply {
             putString("user_full_name", profile.fullName)
             putString("user_phone", profile.phone)
+            putString("user_email", profile.email)
             putString("user_dob", profile.dateOfBirth)
             putString("user_gender", profile.gender)
             putString("user_city", profile.city)
@@ -184,11 +188,12 @@ class AegisRepository(private val context: Context) {
     }
 
     // --- Family Member Invitation ---
-    fun addFamilyMember(name: String, phone: String, relationship: String, accessLevel: String) {
+    fun addFamilyMember(name: String, phone: String, email: String, relationship: String, accessLevel: String) {
         val newMember = FamilyMember(
             memberId = "mem_" + UUID.randomUUID().toString().take(6),
             name = name,
             phone = phone,
+            email = email,
             relationship = relationship,
             accessLevel = accessLevel,
             status = "pending" // Pending till they verify
@@ -202,6 +207,15 @@ class AegisRepository(private val context: Context) {
             recipientPhone = phone,
             textMessage = "AEGIS ALERT: Hi $name, you are invited by ${_currentUser.value?.fullName ?: "your guardian"} to join their Aegis secure safety circle. Download app & sign up."
         )
+
+        // Simulate sending real email invitation
+        if (email.isNotBlank()) {
+            simulateOutboundEmail(
+                recipientEmail = email,
+                subject = "Aegis Secure GPS Safety Circle Invitation",
+                textMessage = "Hi $name,\n\nYou have been invited by ${_currentUser.value?.fullName ?: "your guardian"} to join their secure Aegis Safety Circle to monitor and safeguard your family.\n\nDownload the Aegis App and enter invite code '${newMember.memberId.uppercase(Locale.US)}' to secure your family grid.\n\nAegis Secure Engine"
+            )
+        }
     }
 
     fun removeFamilyMember(id: String) {
@@ -265,11 +279,20 @@ class AegisRepository(private val context: Context) {
         _alerts.value = listOf(alert) + _alerts.value // Display at top of list
         saveAlertsToCache(_alerts.value)
 
-        // Send Push Warning & SMS Fallback
+        // Send Push Warning & SMS Fallback to current user
+        val mainParentPhone = _currentUser.value?.phone ?: "+2348000000000"
+        val mainParentEmail = _currentUser.value?.email ?: ""
         simulateAfricasTalkingSMS(
-            recipientPhone = _currentUser.value?.phone ?: "+2348000000000",
+            recipientPhone = mainParentPhone,
             textMessage = "AEGIS CRITICAL WARNING: ${child.name} has EXITED safety zone '${fence.name}'! Live monitor active."
         )
+        if (mainParentEmail.isNotBlank()) {
+            simulateOutboundEmail(
+                recipientEmail = mainParentEmail,
+                subject = "AEGIS ALERT: ${child.name} EXITED SAFE ZONE",
+                textMessage = "Hi,\n\nThis is an urgent Aegis security dispatch. child ${child.name} has EXITED safety zone '${fence.name}'!\n\nLive tracking and geofencing sweep is currently active. Check the map position inside your Aegis app.\n\nCoordinates: Lat=$lat, Lon=$lon\n\nAegis Team"
+            )
+        }
 
         // Send to other full access family members
         _familyMembers.value.forEach { member ->
@@ -277,6 +300,13 @@ class AegisRepository(private val context: Context) {
                 recipientPhone = member.phone,
                 textMessage = "AEGIS CRITICAL: Pikin ${child.name} exit safe boundary '${fence.name}'. Tracking beacon has engaged."
             )
+            if (member.email.isNotBlank()) {
+                simulateOutboundEmail(
+                    recipientEmail = member.email,
+                    subject = "AEGIS ALERT: ${child.name} Exited Safe Zone",
+                    textMessage = "Hi ${member.name},\n\nThis is an urgent Aegis safety circle warning. child ${child.name} has EXITED safety zone '${fence.name}'!\n\nLive tracking is currently active.\n\nCoordinates: Lat=$lat, Lon=$lon\n\nYour Safety, Our Guard,\nAegis secure engine"
+                )
+            }
         }
     }
 
@@ -301,17 +331,33 @@ class AegisRepository(private val context: Context) {
         _alerts.value = listOf(alert) + _alerts.value
         saveAlertsToCache(_alerts.value)
 
-        // Direct SMS Fallback broadcasts
+        // Direct SMS & Email Fallback broadcasts to parent
+        val mainPhone = _currentUser.value?.phone ?: "+2348000000000"
+        val mainEmail = _currentUser.value?.email ?: ""
         simulateAfricasTalkingSMS(
-            recipientPhone = _currentUser.value?.phone ?: "+2348000000000",
+            recipientPhone = mainPhone,
             textMessage = "AEGIS PANIC TRIGGERED: Child ${child.name} has initiated physical emergency beacon. Location: Ibadan Grid ${liveLoc.latitude}, ${liveLoc.longitude}."
         )
+        if (mainEmail.isNotBlank()) {
+            simulateOutboundEmail(
+                recipientEmail = mainEmail,
+                subject = "AEGIS PANIC: child ${child.name} Triggered SOS!",
+                textMessage = "Hi,\n\nEMERGENCY EXTREME: child ${child.name} has triggered their Aegis panic SOS SOS device!\n\nLive coordinates are: Lat=${liveLoc.latitude}, Lon=${liveLoc.longitude}\n\nAct immediately!\nAegis Team"
+            )
+        }
 
         _familyMembers.value.forEach { member ->
             simulateAfricasTalkingSMS(
                 recipientPhone = member.phone,
                 textMessage = "AEGIS PANIC: Pikin ${child.name} press SOS! Verify position immediately."
             )
+            if (member.email.isNotBlank()) {
+                simulateOutboundEmail(
+                    recipientEmail = member.email,
+                    subject = "AEGIS CIRClE EMERGENCY: child ${child.name} SOS!",
+                    textMessage = "Hi ${member.name},\n\nEMERGENCY: child ${child.name} has pressed their Aegis panic SOS button!\n\nVerify position immediately at: Lat=${liveLoc.latitude}, Lon=${liveLoc.longitude}\n\nAegis secure engine"
+                )
+            }
         }
     }
 
@@ -329,11 +375,22 @@ class AegisRepository(private val context: Context) {
         saveAlertsToCache(_alerts.value)
 
         val alert = _alerts.value.find { it.alertId == id } ?: return
+        
+        val mainPhone = _currentUser.value?.phone ?: "+2348000000000"
+        val mainEmail = _currentUser.value?.email ?: ""
+        
         // Send nationwide broadcast SMS warning
         simulateAfricasTalkingSMS(
-            recipientPhone = _currentUser.value?.phone ?: "+2348000000000",
+            recipientPhone = mainPhone,
             textMessage = "AEGIS AMBER EXTREME: Amber Alert active for child ${alert.childName}. Local sector community network notified."
         )
+        if (mainEmail.isNotBlank()) {
+            simulateOutboundEmail(
+                recipientEmail = mainEmail,
+                subject = "AEGIS AMBER EXTREME DISPATCH: ${alert.childName}",
+                textMessage = "Hi,\n\nAMBER ALERT DISPATCH ACTIVATED FOR ${alert.childName}!\n\nCommunity sector nodes and local security responders have been pinged.\n\nKeep lines open,\nAegis Team"
+            )
+        }
     }
 
     // --- Simulated Fallback SMS Gateway via Africa's Talking API ---
@@ -343,6 +400,50 @@ class AegisRepository(private val context: Context) {
         Log.i("AfricaTalkingSMS", "Content: $textMessage")
         Log.i("AfricaTalkingSMS", "Routing fallback via low-connectivity GSM cellular cell grid")
         Log.i("AfricaTalkingSMS", "========================================")
+        recordNotification(recipientPhone, "SMS", textMessage)
+    }
+
+    fun simulateOutboundEmail(recipientEmail: String, subject: String, textMessage: String) {
+        Log.i("AegisEmailEngine", "=== OUTBOUND EMAIL DISPATCH GATEWAY ===")
+        Log.i("AegisEmailEngine", "To: $recipientEmail")
+        Log.i("AegisEmailEngine", "Subject: $subject")
+        Log.i("AegisEmailEngine", "Content: $textMessage")
+        Log.i("AegisEmailEngine", "========================================")
+        recordNotification(recipientEmail, "EMAIL", "Subject: $subject\n\n$textMessage")
+    }
+
+    private fun recordNotification(recipient: String, channel: String, message: String) {
+        val notif = OutboundNotification(
+            id = "notif_" + UUID.randomUUID().toString().take(6),
+            recipient = recipient,
+            channel = channel,
+            content = message,
+            timestamp = System.currentTimeMillis(),
+            status = "SENT"
+        )
+        val updated = listOf(notif) + _outboundNotifications.value
+        _outboundNotifications.value = updated
+        saveOutboundNotificationsToCache(updated)
+    }
+
+    private fun saveOutboundNotificationsToCache(list: List<OutboundNotification>) {
+        try {
+            val array = JSONArray()
+            for (item in list) {
+                val obj = JSONObject().apply {
+                    put("id", item.id)
+                    put("recipient", item.recipient)
+                    put("channel", item.channel)
+                    put("content", item.content)
+                    put("timestamp", item.timestamp)
+                    put("status", item.status)
+                }
+                array.put(obj)
+            }
+            prefs.edit().putString("caches_outbound", array.toString()).apply()
+        } catch (e: Exception) {
+            Log.e("AegisCache", "Failed to cache outbound notifications: ${e.message}")
+        }
     }
 
     // --- Helper Math: Haversine distance formula ---
@@ -458,6 +559,7 @@ class AegisRepository(private val context: Context) {
                     userId = "user_aegis_local",
                     fullName = prefs.getString("user_full_name", "") ?: "",
                     phone = cachedPhone,
+                    email = prefs.getString("user_email", "") ?: "",
                     dateOfBirth = prefs.getString("user_dob", "") ?: "",
                     gender = prefs.getString("user_gender", "") ?: "",
                     city = prefs.getString("user_city", "") ?: "",
@@ -481,12 +583,30 @@ class AegisRepository(private val context: Context) {
                     memberId = obj.getString("memberId"),
                     name = obj.getString("name"),
                     phone = obj.getString("phone"),
+                    email = obj.optString("email", ""),
                     relationship = obj.getString("relationship"),
                     accessLevel = obj.getString("accessLevel"),
                     status = obj.getString("status")
                 ))
             }
             _familyMembers.value = famList
+
+            // Load outbound notifications logs
+            val outRaw = prefs.getString("caches_outbound", "[]") ?: "[]"
+            val outArray = JSONArray(outRaw)
+            val outList = mutableListOf<OutboundNotification>()
+            for (i in 0 until outArray.length()) {
+                val obj = outArray.getJSONObject(i)
+                outList.add(OutboundNotification(
+                    id = obj.getString("id"),
+                    recipient = obj.getString("recipient"),
+                    channel = obj.getString("channel"),
+                    content = obj.getString("content"),
+                    timestamp = obj.getLong("timestamp"),
+                    status = obj.getString("status")
+                ))
+            }
+            _outboundNotifications.value = outList
 
             // Load alerts
             val alertsRaw = prefs.getString("caches_alerts", "[]") ?: "[]"
@@ -576,6 +696,7 @@ class AegisRepository(private val context: Context) {
                 put("memberId", item.memberId)
                 put("name", item.name)
                 put("phone", item.phone)
+                put("email", item.email)
                 put("relationship", item.relationship)
                 put("accessLevel", item.accessLevel)
                 put("status", item.status)

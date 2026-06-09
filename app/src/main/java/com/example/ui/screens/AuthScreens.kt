@@ -911,64 +911,6 @@ fun ProfileCompletionScreen(lang: String, viewModel: AegisViewModel) {
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Optional Social Links Section
-            Text(t("optional_links", lang), fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 14.sp)
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = linkedin,
-                onValueChange = { linkedin = it },
-                label = { Text(t("sec_linkedin", lang)) },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = DarkNavy,
-                    unfocusedTextColor = DarkNavy,
-                    focusedBorderColor = DarkNavy,
-                    unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
-                    focusedLabelColor = DarkNavy,
-                    unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = github,
-                onValueChange = { github = it },
-                label = { Text(t("sec_github", lang)) },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = DarkNavy,
-                    unfocusedTextColor = DarkNavy,
-                    focusedBorderColor = DarkNavy,
-                    unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
-                    focusedLabelColor = DarkNavy,
-                    unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = website,
-                onValueChange = { website = it },
-                label = { Text(t("sec_website", lang)) },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = DarkNavy,
-                    unfocusedTextColor = DarkNavy,
-                    focusedBorderColor = DarkNavy,
-                    unfocusedBorderColor = DarkNavy.copy(alpha = 0.4f),
-                    focusedLabelColor = DarkNavy,
-                    unfocusedLabelColor = DarkNavy.copy(alpha = 0.6f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
 
             if (showErrorMsg) {
                 Text(
@@ -992,9 +934,9 @@ fun ProfileCompletionScreen(lang: String, viewModel: AegisViewModel) {
                             city = cityQuery,
                             role = selectedRole,
                             photo = profilePhotoId,
-                            linkedin = linkedin,
-                            github = github,
-                            website = website
+                            linkedin = "",
+                            github = "",
+                            website = ""
                         )
                     }
                 },
