@@ -674,6 +674,8 @@ fun SignInScreen(
 
 @Composable
 fun ProfileCompletionScreen(lang: String, viewModel: AegisViewModel) {
+    val currentUserState by viewModel.currentUser.collectAsState()
+
     var dob by remember { mutableStateOf("") }
     var selectedGender by remember { mutableStateOf("Male") }
     var selectedRole by remember { mutableStateOf("Father") }
@@ -686,6 +688,19 @@ fun ProfileCompletionScreen(lang: String, viewModel: AegisViewModel) {
     var website by remember { mutableStateOf("") }
 
     var showErrorMsg by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentUserState) {
+        currentUserState?.let { user ->
+            if (user.dateOfBirth.isNotBlank()) dob = user.dateOfBirth
+            if (user.gender.isNotBlank()) selectedGender = user.gender
+            if (user.role.isNotBlank()) selectedRole = user.role
+            if (user.city.isNotBlank()) cityQuery = user.city
+            if (user.profilePhoto.isNotBlank()) profilePhotoId = user.profilePhoto
+            if (user.linkedIn.isNotBlank()) linkedin = user.linkedIn
+            if (user.github.isNotBlank()) github = user.github
+            if (user.website.isNotBlank()) website = user.website
+        }
+    }
 
     val context = LocalContext.current
 

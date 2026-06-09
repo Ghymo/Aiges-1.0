@@ -289,7 +289,8 @@ fun ChoosePackageStepScreen(
     val packages = listOf(
         Triple("Aegis Decoy Watch", "₦35,000", "Custom decoy tracker disguised as structural standard kid smart watch."),
         Triple("Aegis Mobile Patch", "₦45,000", "Adhesive hidden locator to tape securely inside footwear/lining."),
-        Triple("Aegis Complete (Watch + Patch)", "₦72,000", "Highly recommended bundle. Extreme multi-redundant node coverage.")
+        Triple("Aegis Complete (Watch + Patch)", "₦72,000", "Highly recommended bundle. Extreme multi-redundant node coverage."),
+        Triple("App-Only Companion (No Hardware)", "₦0 (Free)", "Download app on playstore and configure another phone as locator node.")
     )
 
     BackHandler { onBack() }
@@ -329,7 +330,7 @@ fun ChoosePackageStepScreen(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp)
+                            .padding(vertical = 6.dp)
                             .clickable { selectedPkg = pkg.first }
                             .border(
                                 width = 2.dp,
@@ -338,7 +339,7 @@ fun ChoosePackageStepScreen(
                             )
                     ) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
@@ -355,28 +356,28 @@ fun ChoosePackageStepScreen(
                                     text = pkg.first,
                                     color = if (isSelected) PureWhite else DarkNavy,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
+                                    fontSize = 14.sp
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
+                                Spacer(modifier = Modifier.height(1.dp))
                                 Text(
                                     text = pkg.third,
                                     color = if (isSelected) PureWhite.copy(alpha = 0.6f) else DarkNavy.copy(alpha = 0.5f),
-                                    fontSize = 11.sp,
-                                    lineHeight = 15.sp
+                                    fontSize = 10.sp,
+                                    lineHeight = 14.sp
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = pkg.second,
                                     color = GoldAccent,
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 16.sp
+                                    fontSize = 14.sp
                                 )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Special Protection Undertaking Warning Banner
                 Card(
@@ -388,10 +389,10 @@ fun ChoosePackageStepScreen(
                         Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = GoldAccent)
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = t("undertaking_sign", lang),
+                            text = "Aegis runs perfectly with no extra hardware tracking devices required. Select App-Only companion to continue.",
                             fontSize = 11.sp,
                             color = DarkNavy,
-                            lineHeight = 16.sp,
+                            lineHeight = 15.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -414,7 +415,7 @@ fun ChoosePackageStepScreen(
                     modifier = Modifier.weight(1f).height(56.dp)
                 ) {
                     Text(
-                        text = t("continue", lang).uppercase(Locale.ROOT),
+                        text = "CONTINUE",
                         color = PureWhite,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 14.sp
@@ -433,13 +434,13 @@ fun PairDeviceStepScreen(
     onComplete: () -> Unit
 ) {
     BackHandler { onBack() }
-    // 0: QR Scanner, 1: BLE Scan, 2: Manual serial code, 3: Companion Phone Link
-    var setupMode by remember { mutableStateOf(0) }
+    var setupMode by remember { mutableStateOf(0) } // 0: QR Scanner, 1: Barcode Scan, 2: Manual code, 3: Phone
     var isScanning by remember { mutableStateOf(false) }
     var scanProgress by remember { mutableStateOf(0f) }
     var successPair by remember { mutableStateOf(false) }
     var manualSerialCode by remember { mutableStateOf("") }
     var manualError by remember { mutableStateOf("") }
+    var showAddDeviceDialog by remember { mutableStateOf(false) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "radar")
     val pulseScale by infiniteTransition.animateFloat(
@@ -468,7 +469,7 @@ fun PairDeviceStepScreen(
             scanProgress = 0f
             while (scanProgress < 1.0f) {
                 delay(100)
-                scanProgress += 0.04f
+                scanProgress += 0.08f
             }
             isScanning = false
             successPair = true
@@ -502,71 +503,20 @@ fun PairDeviceStepScreen(
                 Text("Step 3 of 4", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = t("pair_device", lang),
+                    text = "PAIR TRACKER / DEVICE",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
                     color = DarkNavy
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Aegis hardware trackers require Carton QR Scan, BLE, or Companion Phone pairing link.",
+                    text = "Pair tracking wear / smartphone companion. You can SKIP to run in App-Only mode (perfectly functional with no hardware).",
                     fontSize = 11.sp,
                     color = DarkNavy.copy(alpha = 0.5f),
                     textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
-
-                // Tab Select Bar for Setup modes
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(DarkNavy.copy(alpha = 0.05f))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    val tabs = listOf(
-                        Triple(Icons.Default.PhotoCamera, "Carton QR", 0),
-                        Triple(Icons.Default.Bluetooth, "BLE Scan", 1),
-                        Triple(Icons.Default.Keyboard, "Serial Code", 2),
-                        Triple(Icons.Default.Smartphone, "Phone Link", 3)
-                    )
-                    tabs.forEach { item ->
-                        val idx = item.third
-                        val active = setupMode == idx
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (active) DarkNavy else Color.Transparent)
-                                .clickable {
-                                    if (!isScanning && !successPair) {
-                                        setupMode = idx
-                                    }
-                                }
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = item.first,
-                                contentDescription = null,
-                                tint = if (active) GoldAccent else DarkNavy.copy(alpha = 0.6f),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = item.second,
-                                color = if (active) PureWhite else DarkNavy.copy(alpha = 0.6f),
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
 
                 // Interactive mode viewport
                 Box(
@@ -597,16 +547,13 @@ fun PairDeviceStepScreen(
                             )
                         }
                     } else if (isScanning) {
-                        // Viewing animation corresponding to active mode
                         if (setupMode == 0) {
-                            // Carton QR Scanner Viewfinder mockup
                             Box(
                                 modifier = Modifier
                                     .size(180.dp)
                                     .border(2.dp, GoldAccent, RoundedCornerShape(12.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                // Scanning Laser Line
                                 Canvas(modifier = Modifier.fillMaxSize()) {
                                     val yPos = size.height * laserOffset
                                     drawLine(
@@ -628,7 +575,33 @@ fun PairDeviceStepScreen(
                                 }
                             }
                         } else if (setupMode == 1) {
-                            // BLE search radar
+                            Box(
+                                modifier = Modifier
+                                    .size(180.dp)
+                                    .border(2.dp, GoldAccent, RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    val yPos = size.height * laserOffset
+                                    drawLine(
+                                        color = DangerRed,
+                                        start = androidx.compose.ui.geometry.Offset(x = 0f, y = yPos),
+                                        end = androidx.compose.ui.geometry.Offset(x = size.width, y = yPos),
+                                        strokeWidth = 3.dp.toPx()
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCodeScanner,
+                                        contentDescription = null,
+                                        tint = PureWhite.copy(alpha = 0.3f),
+                                        modifier = Modifier.size(72.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Scanning Barcode...", color = PureWhite.copy(alpha = 0.5f), fontSize = 10.sp)
+                                }
+                            }
+                        } else if (setupMode == 3) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Canvas(modifier = Modifier.fillMaxSize()) {
                                     drawCircle(
@@ -638,150 +611,45 @@ fun PairDeviceStepScreen(
                                     )
                                 }
                                 Icon(
-                                    imageVector = if (packageChosen.contains("Watch")) Icons.Default.Watch else Icons.Default.Sensors,
-                                    contentDescription = null,
-                                    tint = PureWhite,
-                                    modifier = Modifier.size(56.dp)
-                                )
-                            }
-                        } else {
-                            // Phone Link or Serial Code visual sync radar
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Canvas(modifier = Modifier.fillMaxSize()) {
-                                    drawCircle(
-                                        color = GoldAccent.copy(alpha = 1f - scanProgress),
-                                        radius = 120.dp.toPx() * pulseScale,
-                                        style = Stroke(width = 2.dp.toPx())
-                                    )
-                                }
-                                Icon(
                                     imageVector = Icons.Default.Smartphone,
                                     contentDescription = null,
                                     tint = PureWhite,
                                     modifier = Modifier.size(56.dp)
                                 )
                             }
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Verifying Secure Serial Code...", color = PureWhite, fontSize = 11.sp)
+                            }
                         }
                     } else {
-                        // Static States (Ready to trigger)
-                        when (setupMode) {
-                            0 -> { // QR Code carton guide
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.padding(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PhotoCamera,
-                                        contentDescription = null,
-                                        tint = GoldAccent,
-                                        modifier = Modifier.size(64.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        text = "Scan QR code printed inside the Aegis tracker's carton pack.",
-                                        color = PureWhite.copy(alpha = 0.8f),
-                                        fontSize = 11.sp,
-                                        textAlign = TextAlign.Center,
-                                        lineHeight = 16.sp
-                                    )
-                                }
-                            }
-                            1 -> { // BLE tracker guide
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.padding(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = if (packageChosen.contains("Watch")) Icons.Default.Watch else Icons.Default.Sensors,
-                                        contentDescription = null,
-                                        tint = GoldAccent,
-                                        modifier = Modifier.size(64.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        text = "Search for local cellular/bluetooth pairing node of $packageChosen.",
-                                        color = PureWhite.copy(alpha = 0.8f),
-                                        fontSize = 11.sp,
-                                        textAlign = TextAlign.Center,
-                                        lineHeight = 16.sp
-                                    )
-                                }
-                            }
-                            2 -> { // Manual entry form
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    Text(
-                                        text = "ENTER 8-DIGIT SERIAL",
-                                        color = GoldAccent,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = manualSerialCode,
-                                        onValueChange = {
-                                            if (it.length <= 12) {
-                                                manualIdentitySet(it)
-                                                manualSerialCode = it.uppercase(Locale.getDefault())
-                                                manualError = ""
-                                            }
-                                        },
-                                        placeholder = { Text("AEGIS-XXXX", color = PureWhite.copy(alpha = 0.4f)) },
-                                        singleLine = true,
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = PureWhite,
-                                            unfocusedTextColor = PureWhite,
-                                            focusedBorderColor = GoldAccent,
-                                            unfocusedBorderColor = PureWhite.copy(alpha = 0.4f),
-                                            focusedLabelColor = GoldAccent,
-                                            unfocusedLabelColor = PureWhite.copy(alpha = 0.6f)
-                                        ),
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-                                    )
-                                    if (manualError.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = manualError,
-                                            color = DangerRed,
-                                            fontSize = 10.sp
-                                        )
-                                    }
-                                }
-                            }
-                            3 -> { // Companion Phone Link mode
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Smartphone,
-                                        contentDescription = null,
-                                        tint = GoldAccent,
-                                        modifier = Modifier.size(56.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "MOBILE PHONE LINK BEACON",
-                                        color = GoldAccent,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = "Use another smartphone (e.g., investor's or tester's phone) as the GPS tracking node. Ideal for proving active sync without hardware.",
-                                        color = PureWhite.copy(alpha = 0.8f),
-                                        fontSize = 10.sp,
-                                        textAlign = TextAlign.Center,
-                                        lineHeight = 14.sp
-                                    )
-                                }
-                            }
+                        // Showcase beautiful wrist watch mockup state
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Watch,
+                                contentDescription = null,
+                                tint = GoldAccent,
+                                modifier = Modifier.size(70.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = if (packageChosen.contains("App-Only")) "App-Only Companion Mode" else "Product Carton Pairing Required",
+                                color = PureWhite,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = "Aegis can sync with hardware wearables, extra cell phones, QR codes, or run device-free.",
+                                color = PureWhite.copy(alpha = 0.5f),
+                                fontSize = 10.sp,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 13.sp
+                            )
                         }
                     }
                 }
@@ -789,47 +657,29 @@ fun PairDeviceStepScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = if (successPair) t("pair_success", lang) else if (isScanning) {
-                        if (setupMode == 0) "Reading Carton QR code... Hold steady" 
-                        else if (setupMode == 1) "Searching bluetooth beacons..."
-                        else if (setupMode == 3) "Linking smartphone companion GPS..."
-                        else "Verifying serial registry code..."
-                    } else if (setupMode == 3) "Companion Phone ready to link"
-                    else "Ready to sync $packageChosen",
+                    text = if (successPair) t("pair_success", lang) else if (isScanning) "Linking security target..." else "Status: Ready to Add Device",
                     color = if (successPair) SafeGreen else DarkNavy,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
+                    fontSize = 14.sp
                 )
             }
 
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (!isScanning && !successPair) {
                     Button(
-                        onClick = {
-                            if (setupMode == 2) {
-                                if (manualSerialCode.trim().length < 6) {
-                                    manualError = "Please enter a valid carton serial code"
-                                } else {
-                                    isScanning = true
-                                }
-                            } else {
-                                isScanning = true
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                        onClick = { showAddDeviceDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
                     ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = DarkNavy)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = (if (setupMode == 0) "Start QR Scanner" 
-                                    else if (setupMode == 1) "Scan Bluetooth Target" 
-                                    else if (setupMode == 3) "Connect Secondary Phone"
-                                    else "Link Serial Code").uppercase(Locale.ROOT),
-                            color = PureWhite,
-                            fontWeight = FontWeight.Bold
+                            text = "ADD DEVICE / PARING OPTIONS",
+                            color = DarkNavy,
+                            fontWeight = FontWeight.ExtraBold
                         )
                     }
                 } else if (isScanning) {
@@ -846,16 +696,96 @@ fun PairDeviceStepScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = onBack) {
-                        Text(t("cancel", lang), color = DarkNavy.copy(alpha = 0.5f))
+                        Text(t("cancel", lang).uppercase(Locale.US), color = DarkNavy.copy(alpha = 0.5f))
                     }
-                    TextButton(onClick = onComplete) {
-                        Text(t("skip", lang) + " >>", color = GoldAccent, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = { onComplete() }) {
+                        Text("SKIP HARDWARE (USE APP-ONLY) >>", color = GoldAccent, fontWeight = FontWeight.Black, fontSize = 11.sp)
                     }
                 }
             }
         }
+    }
+
+    if (showAddDeviceDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDeviceDialog = false },
+            title = {
+                Text("Select Pairing Method", fontWeight = FontWeight.Black, color = DarkNavy)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Choose an option from the wearable's product carton coupon or link software beacons:", fontSize = 12.sp, color = DarkNavy.copy(alpha = 0.6f))
+                    
+                    Button(
+                        onClick = {
+                            showAddDeviceDialog = false
+                            setupMode = 3
+                            isScanning = true
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Smartphone, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add Phone (Companion Link)", color = PureWhite, fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            showAddDeviceDialog = false
+                            setupMode = 0
+                            isScanning = true
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Scan QR Code", color = PureWhite, fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            showAddDeviceDialog = false
+                            setupMode = 1
+                            isScanning = true
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.CameraAlt, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Scan Product Barcode", color = PureWhite, fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            showAddDeviceDialog = false
+                            setupMode = 2
+                            isScanning = true
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Pin, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Enter Device Carton PIN / Serial", color = PureWhite, fontSize = 12.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAddDeviceDialog = false }) {
+                    Text("CANCEL", color = DangerRed)
+                }
+            },
+            containerColor = PureWhite
+        )
     }
 }
 

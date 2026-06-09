@@ -445,7 +445,7 @@ fun ChildrenScreenTab(lang: String, viewModel: AegisViewModel, onNavigateAddChil
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -459,32 +459,46 @@ fun ChildrenScreenTab(lang: String, viewModel: AegisViewModel, onNavigateAddChil
             }
         }
 
-        if (itemsList.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🔍", fontSize = 54.sp)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = t("empty_children", lang),
-                        color = DarkNavy.copy(alpha = 0.6f),
-                        textAlign = TextAlign.Center,
-                        fontSize = 14.sp
-                    )
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            if (itemsList.isEmpty()) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = PureWhite),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("🔍", fontSize = 48.sp)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No active child monitors registered yet.",
+                                color = DarkNavy,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Tap the plus icon above to define a telemetry child node, pair a wristwear, or configure Software-Only GPS link.",
+                                color = DarkNavy.copy(alpha = 0.5f),
+                                fontSize = 11.sp,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 14.sp
+                            )
+                        }
+                    }
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentPadding = PaddingValues(16.dp)
-            ) {
+            } else {
                 items(itemsList) { child ->
                     val statusColor = if (child.isOnline) SafeGreen else DangerRed
                     Card(
@@ -582,6 +596,13 @@ fun ChildrenScreenTab(lang: String, viewModel: AegisViewModel, onNavigateAddChil
                         }
                     }
                 }
+            }
+
+            // Always display the AEGIS active safety alerts suite hub below
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                AegisSafetySuiteHub(lang, viewModel)
+                Spacer(modifier = Modifier.height(48.dp))
             }
         }
     }
@@ -972,6 +993,10 @@ fun SettingsScreenTab(lang: String, viewModel: AegisViewModel, onNavigateEditPro
     var phoneInput by remember { mutableStateOf("") }
     var passkeyInput by remember { mutableStateOf("") }
 
+    var accountExpanded by remember { mutableStateOf(false) }
+    var privacyExpanded by remember { mutableStateOf(false) }
+    var supportExpanded by remember { mutableStateOf(false) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -1146,138 +1171,213 @@ fun SettingsScreenTab(lang: String, viewModel: AegisViewModel, onNavigateEditPro
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- ACCOUNT SECURITY & PROTOCOLS ---
-            Text("SECURE ACCOUNT PANEL", fontWeight = FontWeight.Bold, color = DarkNavy)
-            Spacer(modifier = Modifier.height(8.dp))
+            // --- ACCOUNT SECURITY & PROTOCOLS (Collapsible Accordion) ---
             Card(
                 colors = CardDefaults.cardColors(containerColor = PureWhite),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { accountExpanded = !accountExpanded }
             ) {
-                Column {
-                    SettingsRow(
-                        icon = Icons.Default.Lock,
-                        title = "Passkey Setup",
-                        subtitle = "Enable passwordless biometric secure node entry",
-                        onClick = { selectedServiceDialog = "passkey" }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.Email,
-                        title = "Secure Recovery Email",
-                        subtitle = if (curUser?.email.isNullOrBlank()) "guardian@aegis.com" else curUser?.email,
-                        onClick = { selectedServiceDialog = "email" }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.Lock,
-                        title = "Two-Step Verification",
-                        subtitle = "Validate safety changes over dual backup channels",
-                        trailing = {
-                            Switch(
-                                checked = twoStepEnabled,
-                                onCheckedChange = { twoStepEnabled = it },
-                                colors = SwitchDefaults.colors(checkedTrackColor = SafeGreen)
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("SECURE ACCOUNT PANEL", fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 14.sp)
+                                Text("Manage passkey, email, and 2FA credentials", fontSize = 10.sp, color = DarkNavy.copy(alpha = 0.5f))
+                            }
+                        }
+                        Icon(
+                            imageVector = if (accountExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = "Toggle Section",
+                            tint = DarkNavy.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    AnimatedVisibility(visible = accountExpanded) {
+                        Column(modifier = Modifier.padding(top = 12.dp)) {
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Fingerprint,
+                                title = "Passkey Setup",
+                                subtitle = "Enable passwordless biometric secure node entry",
+                                onClick = { selectedServiceDialog = "passkey" }
                             )
-                        },
-                        onClick = { twoStepEnabled = !twoStepEnabled }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.Phone,
-                        title = "Change Phone Number",
-                        subtitle = if (curUser?.phone.isNullOrBlank()) t("profile_completed_title", lang) else curUser?.phone,
-                        onClick = { selectedServiceDialog = "phone" }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.List,
-                        title = "Request Account Info",
-                        subtitle = "Request complete telemetry data package logs",
-                        onClick = { selectedServiceDialog = "request_info" }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.Delete,
-                        title = "Delete Permanent Account",
-                        subtitle = "Decommission and purge database keys",
-                        onClick = { selectedServiceDialog = "delete_account" }
-                    )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Email,
+                                title = "Secure Recovery Email",
+                                subtitle = if (curUser?.email.isNullOrBlank()) "guardian@aegis.com" else curUser?.email,
+                                onClick = { selectedServiceDialog = "email" }
+                            )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Lock,
+                                title = "Two-Step Verification",
+                                subtitle = "Validate safety changes over dual backup channels",
+                                trailing = {
+                                    Switch(
+                                        checked = twoStepEnabled,
+                                        onCheckedChange = { twoStepEnabled = it },
+                                        colors = SwitchDefaults.colors(checkedTrackColor = SafeGreen)
+                                    )
+                                },
+                                onClick = { twoStepEnabled = !twoStepEnabled }
+                            )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Phone,
+                                title = "Change Phone Number",
+                                subtitle = if (curUser?.phone.isNullOrBlank()) t("profile_completed_title", lang) else curUser?.phone,
+                                onClick = { selectedServiceDialog = "phone" }
+                            )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.List,
+                                title = "Request Account Info",
+                                subtitle = "Request complete telemetry data package logs",
+                                onClick = { selectedServiceDialog = "request_info" }
+                            )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Delete,
+                                title = "Delete Permanent Account",
+                                subtitle = "Decommission and purge database keys",
+                                onClick = { selectedServiceDialog = "delete_account" }
+                            )
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // --- PRIVACY & ENCRYPTION ---
-            Text("PRIVACY & NETWORKING", fontWeight = FontWeight.Bold, color = DarkNavy)
-            Spacer(modifier = Modifier.height(8.dp))
+            // --- PRIVACY & ENCRYPTION (Collapsible Accordion) ---
             Card(
                 colors = CardDefaults.cardColors(containerColor = PureWhite),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { privacyExpanded = !privacyExpanded }
             ) {
-                Column {
-                    SettingsRow(
-                        icon = Icons.Default.Security,
-                        title = "Protect IP Address",
-                        subtitle = "Route location beacons via secure proxy onions",
-                        trailing = {
-                            Switch(
-                                checked = ipProtectionEnabled,
-                                onCheckedChange = { ipProtectionEnabled = it },
-                                colors = SwitchDefaults.colors(checkedTrackColor = SafeGreen)
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("PRIVACY & NETWORKING", fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 14.sp)
+                                Text("IP masking and coordinate shielding", fontSize = 10.sp, color = DarkNavy.copy(alpha = 0.5f))
+                            }
+                        }
+                        Icon(
+                            imageVector = if (privacyExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = "Toggle Section",
+                            tint = DarkNavy.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    AnimatedVisibility(visible = privacyExpanded) {
+                        Column(modifier = Modifier.padding(top = 12.dp)) {
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Shield,
+                                title = "Protect IP Address",
+                                subtitle = "Route location beacons via secure proxy onions",
+                                trailing = {
+                                    Switch(
+                                        checked = ipProtectionEnabled,
+                                        onCheckedChange = { ipProtectionEnabled = it },
+                                        colors = SwitchDefaults.colors(checkedTrackColor = SafeGreen)
+                                    )
+                                },
+                                onClick = { ipProtectionEnabled = !ipProtectionEnabled }
                             )
-                        },
-                        onClick = { ipProtectionEnabled = !ipProtectionEnabled }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.Info,
-                        title = "Privacy Policy",
-                        subtitle = "Learn how your offline coordinates are shielded",
-                        onClick = { selectedServiceDialog = "privacy_policy" }
-                    )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Info,
+                                title = "Privacy Policy",
+                                subtitle = "Learn how your offline coordinates are shielded",
+                                onClick = { selectedServiceDialog = "privacy_policy" }
+                            )
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // --- SUPPORT & FEEDBACK ---
-            Text("SUPPORT SERVICES", fontWeight = FontWeight.Bold, color = DarkNavy)
-            Spacer(modifier = Modifier.height(8.dp))
+            // --- SUPPORT & FEEDBACK (Collapsible Accordion) ---
             Card(
                 colors = CardDefaults.cardColors(containerColor = PureWhite),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { supportExpanded = !supportExpanded }
             ) {
-                Column {
-                    SettingsRow(
-                        icon = Icons.Default.Help,
-                        title = "Help Center Support FAQs",
-                        subtitle = "Calibrate networks, sensors, and GPS zones",
-                        onClick = { selectedServiceDialog = "helpcenter" }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.Feedback,
-                        title = "Send Technical Feedback",
-                        subtitle = "Submit bugs, patches, or system suggestions",
-                        onClick = { selectedServiceDialog = "feedback" }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.Warning,
-                        title = "Channel Telemetry Reports",
-                        subtitle = "Monitor SMS, satellite, and LTE handshakes",
-                        onClick = { selectedServiceDialog = "channel_reports" }
-                    )
-                    Divider()
-                    SettingsRow(
-                        icon = Icons.Default.Info,
-                        title = "Terms of Service Agreement",
-                        subtitle = "Liability limits and defensive guidelines",
-                        onClick = { selectedServiceDialog = "terms" }
-                    )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.Help, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("SUPPORT & DOCUMENTATION", fontWeight = FontWeight.Bold, color = DarkNavy, fontSize = 14.sp)
+                                Text("FAQs, technical feedback logs, and terms", fontSize = 10.sp, color = DarkNavy.copy(alpha = 0.5f))
+                            }
+                        }
+                        Icon(
+                            imageVector = if (supportExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = "Toggle Section",
+                            tint = DarkNavy.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    AnimatedVisibility(visible = supportExpanded) {
+                        Column(modifier = Modifier.padding(top = 12.dp)) {
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.HelpCenter,
+                                title = "Help Center Support FAQs",
+                                subtitle = "Calibrate networks, sensors, and GPS zones",
+                                onClick = { selectedServiceDialog = "helpcenter" }
+                            )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Feedback,
+                                title = "Send Technical Feedback",
+                                subtitle = "Submit bugs, patches, or system suggestions",
+                                onClick = { selectedServiceDialog = "feedback" }
+                            )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Terminal,
+                                title = "Channel Telemetry Reports",
+                                subtitle = "Monitor SMS, satellite, and LTE handshakes",
+                                onClick = { selectedServiceDialog = "channel_reports" }
+                            )
+                            Divider()
+                            SettingsRow(
+                                icon = Icons.Default.Info,
+                                title = "Terms of Service Agreement",
+                                subtitle = "Liability limits and defensive guidelines",
+                                onClick = { selectedServiceDialog = "terms" }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -1754,6 +1854,566 @@ fun SettingsRow(
                 contentDescription = null,
                 tint = DarkNavy.copy(alpha = 0.3f),
                 modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+// ==========================================
+// AEGIS PREVENTATIVE SAFETY & ALERTS HUB
+// ==========================================
+@Composable
+fun AegisSafetySuiteHub(lang: String, viewModel: AegisViewModel) {
+    var expandedFeature by remember { mutableStateOf<String?>(null) }
+
+    // State parameters for simulation
+    var showCircleToast by remember { mutableStateOf(false) }
+    var circleAlertActive by remember { mutableStateOf(false) }
+    var circleLog by remember { mutableStateOf("Ready to transmit secure circle beacon.") }
+
+    var timeIntervalSlider by remember { mutableStateOf(15f) } // 15 mins, 30 mins, 60 mins
+    var sightingText by remember { mutableStateOf("") }
+    var submittedSightingLog by remember { mutableStateOf("") }
+
+    var routineLearningEnabled by remember { mutableStateOf(true) }
+    var mockSightingReport by remember { mutableStateOf("No local bystander dispatches recorded.") }
+
+    var showPosterModal by remember { mutableStateOf(false) }
+    var dossierStatusLog by remember { mutableStateOf("Ready to assemble case dossier.") }
+
+    val activeChildren by viewModel.children.collectAsState()
+    val targetChildName = if (activeChildren.isNotEmpty()) activeChildren[0].name else "Aegis Child"
+    val targetChildAvatar = if (activeChildren.isNotEmpty()) activeChildren[0].avatar else "👦"
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = DarkNavy),
+        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = null,
+                    tint = GoldAccent,
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "AEGIS ALERT & SAFETY SUITE",
+                        color = PureWhite,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "Prevents risk and triggers multi-channel emergency networks",
+                        color = PureWhite.copy(alpha = 0.6f),
+                        fontSize = 10.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 1. Trusted Circle Alert (Tap to reveal details and simulate)
+            AegisSafetyItemCard(
+                title = "1. Trusted Circle Direct Alert",
+                subtitle = "Notify relatives & teachers dynamically",
+                icon = Icons.Default.People,
+                isExpanded = expandedFeature == "trusted_circle",
+                onClick = { expandedFeature = if (expandedFeature == "trusted_circle") null else "trusted_circle" }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = "Automatically pings child coordinates, photos, maps, and dial handles to registered immediate guardian devices when reported at-risk.",
+                        color = PureWhite.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "TRUSTED ENCLAVE CONTACTS:",
+                        color = GoldAccent,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp
+                    )
+                    val circleContacts = listOf(
+                        "👨 Father (Active SMS Hub)",
+                        "👩 Mother (Primary Responder)",
+                        "👵 Grandmother (Secondary Relay)",
+                        "👨‍🏫 School Head Teacher (Perimeter Guard)"
+                    )
+                    CircleContactList(contacts = circleContacts)
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Button(
+                        onClick = {
+                            circleAlertActive = true
+                            circleLog = "Alert dispatched! Contacts: 4 notified. Mother (RESPONDING): 'Scanning zone!' Tracker live GPS link synced."
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (circleAlertActive) DangerRed else GoldAccent),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.Warning, contentDescription = null, tint = if (circleAlertActive) PureWhite else DarkNavy, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (circleAlertActive) "CRITICAL ALERT ACTIVE — VIEW LIVE FEED" else "TEST TRUSTED CIRCLE EMERGENCY PING",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (circleAlertActive) PureWhite else DarkNavy
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = PureWhite.copy(alpha = 0.05f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "CONSOLE: $circleLog",
+                            color = if (circleAlertActive) GoldAccent else PureWhite.copy(alpha = 0.6f),
+                            fontSize = 9.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 2. Community Alert Network
+            AegisSafetyItemCard(
+                title = "2. Community Alert Network (NFC & GPS)",
+                subtitle = "Scalable local radius broadcast filters",
+                icon = Icons.Default.ShareLocation,
+                isExpanded = expandedFeature == "community_network",
+                onClick = { expandedFeature = if (expandedFeature == "community_network") null else "community_network" }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = "Launches neighborhood-wide alerts inside a dynamic radius. The radius automatically scales based on duration offline.",
+                        color = PureWhite.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    // Radius scale slider
+                    val radiusKm = when {
+                        timeIntervalSlider <= 15 -> 2
+                        timeIntervalSlider <= 40 -> 5
+                        else -> 10
+                    }
+                    Text(
+                        text = "DURATION OFFLINE: ${timeIntervalSlider.toInt()} MINS • BROADCAST RADIUS: $radiusKm KM",
+                        color = GoldAccent,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp
+                    )
+                    Slider(
+                        value = timeIntervalSlider,
+                        onValueChange = { timeIntervalSlider = it },
+                        valueRange = 15f..60f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = GoldAccent,
+                            activeTrackColor = GoldAccent,
+                            inactiveTrackColor = PureWhite.copy(alpha = 0.2f)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "SIMULATE LOCAL BYSTANDER SIGHTING REPORT:",
+                        color = PureWhite.copy(alpha = 0.7f),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = sightingText,
+                        onValueChange = { sightingText = it },
+                        placeholder = { Text("Describe location, clothing, or sightings...", color = PureWhite.copy(alpha = 0.3f), fontSize = 11.sp) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = PureWhite,
+                            unfocusedTextColor = PureWhite,
+                            focusedBorderColor = GoldAccent,
+                            unfocusedBorderColor = PureWhite.copy(alpha = 0.2f)
+                        ),
+                        modifier = Modifier.fillMaxWidth().height(60.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            if (sightingText.isNotBlank()) {
+                                submittedSightingLog = "[VERIFIED SIGHTING] ${sightingText.trim()}. Radar alerted."
+                                sightingText = ""
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkNavy),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("SUBMIT COMMUNITY SIGHTING", fontSize = 10.sp, color = PureWhite, fontWeight = FontWeight.Bold)
+                    }
+
+                    if (submittedSightingLog.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = SafeGreen.copy(alpha = 0.15f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = submittedSightingLog,
+                                color = SafeGreen,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 3. Geofence Breach
+            AegisSafetyItemCard(
+                title = "3. Geofence Breach Proactive Guard",
+                subtitle = "Exit, delayed arrival, unauthorized areas",
+                icon = Icons.Default.MapsHomeWork,
+                isExpanded = expandedFeature == "geofence_breach",
+                onClick = { expandedFeature = if (expandedFeature == "geofence_breach") null else "geofence_breach" }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = "Configures dynamic geofencing boundaries. LearnJourney AI models the child's typical weekly paths and school routines to trigger early warnings when deviations occur.",
+                        color = PureWhite.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Routine Learning AI Model", color = GoldAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Switch(
+                            checked = routineLearningEnabled,
+                            onCheckedChange = { routineLearningEnabled = it },
+                            colors = SwitchDefaults.colors(checkedTrackColor = SafeGreen)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "VIRTUAL FENCE BOUNDARY STATES:",
+                        color = GoldAccent,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp
+                    )
+                    val fenceStates = listOf(
+                        "🏫 Primary School Yard: Arrival (Active) • Delayed Arrival Alert (Set for 13:45)",
+                        "🏡 Sweet Home Perimeter: Exit Alert (Active) • Arrival (Alert Silent)",
+                        "🕌 Local Mosque Sector: Boundary Exit (Active)"
+                    )
+                    Column {
+                        fenceStates.forEach { fs ->
+                            Text("📍 $fs", color = PureWhite.copy(alpha = 0.7f), fontSize = 10.sp, lineHeight = 14.sp)
+                            Spacer(modifier = Modifier.height(2.dp))
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 4. Nearby bystander assistance
+            AegisSafetyItemCard(
+                title = "4. Nearby Bystander Alert Pings",
+                subtitle = "Alert vetted Aegis rescuers safely",
+                icon = Icons.Default.Sos,
+                isExpanded = expandedFeature == "nearby_assistance",
+                onClick = { expandedFeature = if (expandedFeature == "nearby_assistance") null else "nearby_assistance" }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = "Enables emergency pings to secure bystander units in direct line-of-sight. Crucially, your parent/guardian personal details will be fully masked unless you explicitly grant security authorization.",
+                        color = PureWhite.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            mockSightingReport = "[PINGING] Broad-network SOS packets transmitted to 8 vetted Aegis defenders. Masked tracking tunnel active."
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = DangerRed),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("PING SECURE BYSTANDER FORCE", fontSize = 10.sp, color = PureWhite, fontWeight = FontWeight.Black)
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = PureWhite.copy(alpha = 0.05f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = mockSightingReport,
+                            color = PureWhite.copy(alpha = 0.6f),
+                            fontSize = 9.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 5. AI Risk Detection
+            AegisSafetyItemCard(
+                title = "5. AI-Powered Danger & Risk Engine",
+                subtitle = "Analyzes unusual telemetry speeds & shutoffs",
+                icon = Icons.Default.Memory,
+                isExpanded = expandedFeature == "ai_risk_detection",
+                onClick = { expandedFeature = if (expandedFeature == "ai_risk_detection") null else "ai_risk_detection" }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = "Automated background sweeps scan physical tracking indices for anomalous patterns: suspicious high-speed movement, unauthorized route deviation, and sudden node shutdown coordinates.",
+                        color = PureWhite.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "REALTIME CORES & THREAT SUMMARY:",
+                        color = GoldAccent,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp
+                    )
+                    val riskLogs = listOf(
+                        "🛰️ ROUTE DRIFT CORES: Nominal (0m offset limits)",
+                        "🔋 WEARABLE ACCELEROMETER: Walking speed (1.4 m/s)",
+                        "🔌 HARDWARE JAMMER DETECTION: No jamming pings detected",
+                        "📲 SUDDEN SHUTOFF SECURE HANDSHAKE: Active socket checked"
+                    )
+                    Column {
+                        riskLogs.forEach { log ->
+                            Text(log, color = PureWhite.copy(alpha = 0.7f), fontSize = 10.sp)
+                            Spacer(modifier = Modifier.height(2.dp))
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 6. Police Escalation Pack
+            AegisSafetyItemCard(
+                title = "6. Police Escalation Package",
+                subtitle = "One-tap PDF, printable poster & history zip",
+                icon = Icons.Default.LocalPolice,
+                isExpanded = expandedFeature == "police_escalation",
+                onClick = { expandedFeature = if (expandedFeature == "police_escalation") null else "police_escalation" }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = "Auto-compiles vital demographics: child name, age, physical indicators, last-known map coordinate plots, and historic trackings for immediate handoff.",
+                        color = PureWhite.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { showPosterModal = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = DangerRed),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("GENERATE POSTER", fontSize = 10.sp, color = PureWhite, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                dossierStatusLog = "[SUCCESS] Compiled encrypted ZIP export. File saved inside your Downloads: Aegis_Escalation_${targetChildName}_Kit.pdf"
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("EXPORT CASE PDF", fontSize = 10.sp, color = DarkNavy, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = PureWhite.copy(alpha = 0.05f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = dossierStatusLog,
+                            color = PureWhite.copy(alpha = 0.6f),
+                            fontSize = 9.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showPosterModal) {
+        AlertDialog(
+            onDismissRequest = { showPosterModal = false },
+            title = {
+                Text(
+                    text = "🚨 URGENT: COMS STATE CODES EXPORTED",
+                    fontWeight = FontWeight.Black,
+                    color = DangerRed,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(3.dp, DangerRed)
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "MISSING CHILD",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        color = DangerRed
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .background(DarkNavy.copy(alpha = 0.1f), shape = CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(targetChildAvatar, fontSize = 64.sp)
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = targetChildName.uppercase(Locale.getDefault()),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = DarkNavy
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "LAST KNOWN GEO: 6.5244° N, 3.3792° E\nTIME OF ALERT: UTC Real-time",
+                        textAlign = TextAlign.Center,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkNavy.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "IF FOUND, INITIATE DIRECT CONTACT WITH PRIMARY RESPONDER CHANNELS IMMEDIATELY. VERIFIED SECURE COORDINATE ENCRYPTED WITH AEGIS INTEGRITY METRICS.",
+                        fontSize = 10.sp,
+                        textAlign = TextAlign.Center,
+                        color = DarkNavy.copy(alpha = 0.6f),
+                        lineHeight = 13.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPosterModal = false }) {
+                    Text("CLOSE POSTER PREVIEW", color = DarkNavy, fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = PureWhite
+        )
+    }
+}
+
+@Composable
+fun AegisSafetyItemCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    isExpanded: Boolean,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = DarkNavy),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = GoldAccent,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = title,
+                            color = PureWhite,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = subtitle,
+                            color = PureWhite.copy(alpha = 0.5f),
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = PureWhite.copy(alpha = 0.6f)
+                )
+            }
+
+            AnimatedVisibility(visible = isExpanded) {
+                Divider(color = PureWhite.copy(alpha = 0.1f))
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+fun CircleContactList(contacts: List<String>) {
+    Column {
+        contacts.forEach { contact ->
+            Text(
+                text = contact,
+                color = PureWhite.copy(alpha = 0.8f),
+                fontSize = 10.sp,
+                modifier = Modifier.padding(vertical = 2.dp)
             )
         }
     }
