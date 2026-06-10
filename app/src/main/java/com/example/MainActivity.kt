@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
                         val aegisViewModel: AegisViewModel = viewModel()
-                        AegisNavigationRouter(viewModel = aegisViewModel)
+                        AegisNavigationRouter(viewModel = aegisViewModel, activity = this)
                     }
                 }
             }
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AegisNavigationRouter(viewModel: AegisViewModel) {
+fun AegisNavigationRouter(viewModel: AegisViewModel, activity: ComponentActivity) {
     val screen by viewModel.currentScreen.collectAsState()
     val lang by viewModel.activeLanguage.collectAsState()
 
@@ -80,7 +80,8 @@ fun AegisNavigationRouter(viewModel: AegisViewModel) {
             )
             is AegisScreen.ProfileCompletion -> ProfileCompletionScreen(
                 lang = lang,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onBack = { viewModel.navigateTo(AegisScreen.Welcome) }
             )
             is AegisScreen.SignIn -> SignInScreen(
                 lang = lang,
@@ -110,6 +111,12 @@ fun AegisNavigationRouter(viewModel: AegisViewModel) {
                 packageChosen = active.packageChosen,
                 onBack = { viewModel.navigateTo(AegisScreen.ChoosePackageStep(active.name, active.age, active.avatar)) },
                 onComplete = { viewModel.onDevicePaired(active.name, active.age, active.avatar, active.packageChosen) }
+            )
+            is AegisScreen.LinkTrackingStep -> LinkTrackingScreen(
+                lang = lang,
+                viewModel = viewModel,
+                onBack = { viewModel.navigateTo(AegisScreen.AddChildStep) },
+                onComplete = { viewModel.onAddFamilyStepDone() }
             )
             is AegisScreen.AddFamilyMemberStep -> AddFamilyMemberStepScreen(
                 lang = lang,
