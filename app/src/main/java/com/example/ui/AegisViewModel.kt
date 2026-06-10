@@ -14,11 +14,14 @@ import com.example.data.RealtimeLocation
 import com.example.data.SafetyAlert
 import com.example.data.UserProfile
 import com.example.data.OutboundNotification
+import com.example.data.TrackingLink
+import com.example.data.TrustedCircle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.*
 
 sealed class AegisScreen {
     object Splash : AegisScreen()
@@ -33,6 +36,7 @@ sealed class AegisScreen {
     object AddChildStep : AegisScreen() // Step 1 of 4
     data class ChoosePackageStep(val name: String, val age: String, val avatar: String) : AegisScreen() // Step 2 of 4
     data class PairDeviceStep(val name: String, val age: String, val avatar: String, val packageChosen: String) : AegisScreen() // Step 3 of 4
+    object LinkTrackingStep : AegisScreen() // Step 3b - Generate tracking link
     object AddFamilyMemberStep : AegisScreen() // Step 4 of 4
     
     // Boundary Placement Screen
@@ -64,6 +68,14 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
     val activeLanguage = repository.activeLanguage
     val outboundNotifications = repository.outboundNotifications
 
+    // Tracking Links
+    private val _trackingLinks = MutableStateFlow<List<TrackingLink>>(emptyList())
+    val trackingLinks: StateFlow<List<TrackingLink>> = _trackingLinks.asStateFlow()
+
+    // Trusted Circles
+    private val _trustedCircles = MutableStateFlow<List<TrustedCircle>>(emptyList())
+    val trustedCircles: StateFlow<List<TrustedCircle>> = _trustedCircles.asStateFlow()
+
     // Toggle and setting configurations of Settings Tab
     private val _zoneAlertsEnabled = MutableStateFlow(true)
     val zoneAlertsEnabled = _zoneAlertsEnabled.asStateFlow()
@@ -94,6 +106,10 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
     private val _focusedAlert = MutableStateFlow<SafetyAlert?>(null)
     val focusedAlert: StateFlow<SafetyAlert?> = _focusedAlert.asStateFlow()
 
+    // Current tracking link being generated
+    private val _currentGeneratedLink = MutableStateFlow<String>("")
+    val currentGeneratedLink: StateFlow<String> = _currentGeneratedLink.asStateFlow()
+
     init {
         // Trigger Splash Timer transition
         viewModelScope.launch {
@@ -119,6 +135,14 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+
+        // AI-Powered Risk Detection - Monitor for suspicious patterns
+        viewModelScope.launch {
+            while (true) {
+                delay(30000) // Check every 30 seconds
+                detectAnomalousPatterns()
+            }
+        }
     }
 
     // Navigation controllers
@@ -128,6 +152,187 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectTab(index: Int) {
         _activeTab.value = index
+    }
+
+    // ===== TRACKING LINK GENERATION =====
+    fun generateTrackingLink(childId: String): String {
+        val linkId = UUID.randomUUID().toString()
+        val trackingLink = TrackingLink(
+            linkId = linkId,
+            childId = childId,
+            parentPhone = currentUser.value?.phone ?: "",
+            createdAt = System.currentTimeMillis(),
+            expiresAt = System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000) // 7 days
+        )
+        
+        val fullLink = "aegis://track/$linkId"
+        _currentGeneratedLink.value = fullLink
+        
+        // Add to tracking links
+        val updated = _trackingLinks.value.toMutableList()
+        updated.add(trackingLink)
+        _trackingLinks.value = updated
+        
+        return fullLink
+    }
+
+    fun acceptTrackingLink(linkId: String): Boolean {
+        val link = _trackingLinks.value.find { it.linkId == linkId } ?: return false
+        
+        // Check if link is expired
+        if (System.currentTimeMillis() > link.expiresAt) {
+            return false
+        }
+
+        // Update link as accepted
+        val updated = _trackingLinks.value.toMutableList()
+        val index = updated.indexOfFirst { it.linkId == linkId }
+        if (index >= 0) {
+            updated[index] = updated[index].copy(
+                isAccepted = true,
+                acceptedAt = System.currentTimeMillis()
+            )
+            _trackingLinks.value = updated
+            
+            // Update child tracker
+            repository.updateChildTrackingLink(link.childId, linkId, true)
+            return true
+        }
+        return false
+    }
+
+    // ===== TRUSTED CIRCLE MANAGEMENT =====
+    fun createTrustedCircle(childId: String, members: List<String>) {
+        val circleId = UUID.randomUUID().toString()
+        val circle = TrustedCircle(
+            circleId = circleId,
+            childId = childId,
+            members = members
+        )
+        
+        val updated = _trustedCircles.value.toMutableList()
+        updated.add(circle)
+        _trustedCircles.value = updated
+    }
+
+    fun sendTrustedCircleAlert(childId: String, alertMessage: String) {
+        val circle = _trustedCircles.value.find { it.childId == childId } ?: return
+        
+        // Send alert to all circle members
+        circle.members.forEach { phone ->
+            repository.sendOutboundNotification(
+                recipient = phone,
+                channel = "SMS",
+                content = alertMessage
+            )
+        }
+    }
+
+    // ===== AI-POWERED RISK DETECTION =====
+    private suspend fun detectAnomalousPatterns() {
+        children.value.forEach { child ->
+            val location = liveLocations.value[child.childId] ?: return@forEach
+            
+            // Check for suspicious patterns
+            val riskAlert = when {
+                hasRouteDEviation(child.childId, location) -> {
+                    createSafetyAlert(
+                        childId = child.childId,
+                        type = "route_deviation",
+                        severity = "warning",
+                        details = "Child deviated from normal route"
+                    )
+                }
+                hasPhoneShutdown(child.childId) -> {
+                    createSafetyAlert(
+                        childId = child.childId,
+                        type = "phone_shutdown",
+                        severity = "critical",
+                        details = "Device powered off unexpectedly"
+                    )
+                }
+                hasUnusualInactivity(child.childId) -> {
+                    createSafetyAlert(
+                        childId = child.childId,
+                        type = "ai_risk",
+                        severity = "warning",
+                        details = "Unusual inactivity detected"
+                    )
+                }
+                hasSuspiciousTravel(child.childId, location) -> {
+                    createSafetyAlert(
+                        childId = child.childId,
+                        type = "ai_risk",
+                        severity = "critical",
+                        details = "Suspicious rapid movement detected"
+                    )
+                }
+                hasRepeatedGeofenceViolations(child.childId) -> {
+                    createSafetyAlert(
+                        childId = child.childId,
+                        type = "ai_risk",
+                        severity = "warning",
+                        details = "Multiple geofence violations detected"
+                    )
+                }
+                else -> null
+            }
+            
+            if (riskAlert != null) {
+                triggerDeviceVibration()
+                sendTrustedCircleAlert(child.childId, riskAlert.details)
+            }
+        }
+    }
+
+    private fun hasRouteDEviation(childId: String, location: RealtimeLocation): Boolean {
+        // TODO: Implement route deviation logic comparing to historical patterns
+        return false
+    }
+
+    private fun hasPhoneShutdown(childId: String): Boolean {
+        // TODO: Check if device connectivity was lost suddenly
+        return false
+    }
+
+    private fun hasUnusualInactivity(childId: String): Boolean {
+        // TODO: Check if child hasn't moved for unusual time period
+        return false
+    }
+
+    private fun hasSuspiciousTravel(childId: String, location: RealtimeLocation): Boolean {
+        // TODO: Check if child is moving unusually fast or far from expected locations
+        return false
+    }
+
+    private fun hasRepeatedGeofenceViolations(childId: String): Boolean {
+        val childGeofences = geofences.value.filter { it.childId == childId }
+        return childGeofences.count { it.isActive } > 3
+    }
+
+    private fun createSafetyAlert(
+        childId: String,
+        type: String,
+        severity: String,
+        details: String
+    ): SafetyAlert {
+        val child = children.value.find { it.childId == childId } ?: return SafetyAlert()
+        val location = liveLocations.value[childId] ?: RealtimeLocation()
+        
+        val alert = SafetyAlert(
+            alertId = UUID.randomUUID().toString(),
+            type = type,
+            childId = childId,
+            childName = child.name,
+            childAvatar = child.avatar,
+            latitude = location.latitude,
+            longitude = location.longitude,
+            severity = severity,
+            details = details
+        )
+        
+        repository.addAlert(alert)
+        return alert
     }
 
     // Biometric helper
@@ -208,18 +413,13 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onBiometricLoginRequested(context: Context, onSuccess: () -> Unit, onError: () -> Unit) {
-        // Biometric authentication logic - FIXED
         viewModelScope.launch {
             try {
-                // Simulate fingerprint scan delay
                 delay(1000)
-                
-                // Get stored credentials from secure storage
                 val prefs = context.getSharedPreferences("aegis_secure_store", Context.MODE_PRIVATE)
                 val cachedPhone = prefs.getString("user_phone", null)
                 val cachedPin = prefs.getString("user_pin_hash", null)
                 
-                // Check if biometric credentials are available
                 if (cachedPhone != null && cachedPin != null) {
                     val loginSuccess = repository.registerOrSignIn(cachedPhone, cachedPin)
                     if (loginSuccess) {
@@ -234,7 +434,6 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
                         onError()
                     }
                 } else {
-                    // No biometric credentials stored
                     onError()
                 }
             } catch (e: Exception) {
@@ -278,11 +477,14 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onDevicePaired(name: String, age: String, avatar: String, pkg: String) {
         repository.addChild(name, age, avatar, pkg)
+        _currentScreen.value = AegisScreen.LinkTrackingStep
+    }
+
+    fun onLinkTrackingDone() {
         _currentScreen.value = AegisScreen.AddFamilyMemberStep
     }
 
     fun onAddFamilyStepDone() {
-        // If there are children, pre-select first child for geofence mapping setup
         selectedChildForGeofence.value = repository.children.value.lastOrNull()
         _currentScreen.value = AegisScreen.SetGeofenceSetup
     }
@@ -333,7 +535,6 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
         _currentScreen.value = AegisScreen.SignIn
     }
 
-    // Resolve active overlay modal
     fun dismissFocusedAlert() {
         val alert = _focusedAlert.value
         if (alert != null) {
@@ -355,12 +556,10 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
         val activeFence = geofences.value.find { it.childId == childId || it.childId.isEmpty() }
 
         if (activeFence != null) {
-            // Place coordinate 550 meters outside of the geofence center to trigger the alert
-            val driftLat = activeFence.latitude + 0.007 // roughly 770m drift
+            val driftLat = activeFence.latitude + 0.007
             val driftLon = activeFence.longitude + 0.007
             repository.updateChildLocationForcefully(childId, driftLat, driftLon)
         } else {
-            // If no geofence active, create some drift off Ibadan center
             repository.updateChildLocationForcefully(childId, 7.3910, 3.9610)
         }
     }
@@ -370,7 +569,6 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun triggerGPSHopNormal(childId: String) {
-        // Move slightly but stay inside Ibadan center
         val randLat = 7.3775 + (Math.random() - 0.5) * 0.002
         val randLon = 3.9470 + (Math.random() - 0.5) * 0.002
         repository.updateChildLocationForcefully(childId, randLat, randLon)
@@ -385,7 +583,7 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
             val vibrator = getApplication<Application>().getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
             vibrator?.vibrate(400)
         } catch (e: Exception) {
-            // Safe fallback on headless execution
+            // Safe fallback
         }
     }
 
