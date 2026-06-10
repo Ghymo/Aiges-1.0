@@ -208,26 +208,37 @@ class AegisViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onBiometricLoginRequested(context: Context, onSuccess: () -> Unit, onError: () -> Unit) {
-        // Biometric sensor simulation logic
+        // Biometric authentication logic - FIXED
         viewModelScope.launch {
-            delay(1000) // fake scan
-            // Try to auto log in with cached variables if available
-            val cachedPhone = context.getSharedPreferences("aegis_secure_store", Context.MODE_PRIVATE).getString("user_phone", "")
-            val cachedPin = context.getSharedPreferences("aegis_secure_store", Context.MODE_PRIVATE).getString("user_pin_hash", "")
-            if (!cachedPhone.isNullOrEmpty() && !cachedPin.isNullOrEmpty()) {
-                val loginSuccess = repository.registerOrSignIn(cachedPhone, cachedPin)
-                if (loginSuccess) {
-                    val user = repository.currentUser.value
-                    if (user != null && !user.profileComplete) {
-                        _currentScreen.value = AegisScreen.ProfileCompletion
+            try {
+                // Simulate fingerprint scan delay
+                delay(1000)
+                
+                // Get stored credentials from secure storage
+                val prefs = context.getSharedPreferences("aegis_secure_store", Context.MODE_PRIVATE)
+                val cachedPhone = prefs.getString("user_phone", null)
+                val cachedPin = prefs.getString("user_pin_hash", null)
+                
+                // Check if biometric credentials are available
+                if (cachedPhone != null && cachedPin != null) {
+                    val loginSuccess = repository.registerOrSignIn(cachedPhone, cachedPin)
+                    if (loginSuccess) {
+                        val user = repository.currentUser.value
+                        if (user != null && !user.profileComplete) {
+                            _currentScreen.value = AegisScreen.ProfileCompletion
+                        } else {
+                            _currentScreen.value = AegisScreen.MainAppContainer
+                        }
+                        onSuccess()
                     } else {
-                        _currentScreen.value = AegisScreen.MainAppContainer
+                        onError()
                     }
-                    onSuccess()
                 } else {
+                    // No biometric credentials stored
                     onError()
                 }
-            } else {
+            } catch (e: Exception) {
+                android.util.Log.e("AegisBiometric", "Biometric login failed: ${e.message}")
                 onError()
             }
         }
